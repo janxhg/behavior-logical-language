@@ -1,0 +1,25 @@
+# Test executable for new neurons
+add_executable(test_new_neurons test_new_neurons.cpp)
+
+# Link with the BIO library
+target_link_libraries(test_new_neurons PRIVATE brainll_bio)
+
+# Include directories
+target_include_directories(test_new_neurons PRIVATE 
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/BIO/neurons
+)
+
+# Link OpenMP if available
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(test_new_neurons PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+# Set C++ standard
+set_target_properties(test_new_neurons PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Add to tests
+add_test(NAME NewNeuronsTest COMMAND test_new_neurons)

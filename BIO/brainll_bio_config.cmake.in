@@ -1,0 +1,8 @@
+# Copyright (c) 2025 Joaquín Sturtz - NetechAI
+# Licensed under AGPL v3 - 17/7/2025
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/brainll_bio_targets.cmake")
+
+check_required_components(brainll_bio)
