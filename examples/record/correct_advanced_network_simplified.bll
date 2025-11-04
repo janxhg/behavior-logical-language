@@ -1,0 +1,354 @@
+// Ejemplo avanzado simplificado de red neuronal
+// Sin características experimentales que podrían causar problemas
+# Configuración básica de la red
+network "optimized_network" {
+    type: "feedforward"
+    layers: 4
+    neurons_per_layer: [784, 256, 128, 10]
+    activation: "relu"
+}
+
+# Configuración de optimización SIMD
+simd_optimization "high_performance" {
+    # Habilitar optimizaciones SIMD
+    enabled: true
+    
+    # Auto-detectar capacidades del CPU
+    auto_detect: true
+    
+    # Forzar conjuntos de instrucciones específicos (opcional)
+    # force_avx2: true
+    # force_sse41: false
+    # force_fma: true
+    
+    # Usar fallback escalar si SIMD no está disponible
+    use_scalar_fallback: true
+    
+    # Vectorizar operaciones específicas
+    vectorize_activation: true
+    vectorize_matrix_ops: true
+    vectorize_convolution: true
+    vectorize_pooling: true
+    vectorize_attention: true
+    
+    # Configuración de memoria
+    memory_alignment: 32  # Alineación para AVX2 (32 bytes)
+    use_prefetching: true
+    prefetch_locality: 3  # Localidad temporal alta
+    
+    # Configuración de desenrollado de bucles
+    unroll_factor: 4
+    block_size: 256
+    
+    # Habilitar benchmarking para medir rendimiento
+    enable_benchmarking: true
+    
+    # Overrides para operaciones específicas
+    override_sigmoid: true
+    override_tanh: true
+    override_relu: true
+    override_matrix_mul: true
+}
+
+# Configuración de optimización adicional para comparación
+simd_optimization "conservative" {
+    enabled: true
+    auto_detect: true
+    use_scalar_fallback: true
+    
+    # Solo vectorizar operaciones básicas
+    vectorize_activation: true
+    vectorize_matrix_ops: false
+    vectorize_convolution: false
+    vectorize_pooling: false
+    vectorize_attention: false
+    
+    memory_alignment: 16  # SSE alignment
+    use_prefetching: false
+    unroll_factor: 2
+    block_size: 128
+    
+    enable_benchmarking: true
+}
+// Configuración global avanzada
+global {
+    simulation_timestep = 0.05
+    learning_enabled = true
+    plasticity_decay = 0.005
+    noise_level = 0.01
+    random_seed = 123456
+    parallel_processing = true
+    gpu_acceleration = true
+}
+
+// Tipos de neuronas especializadas
+neuron_type cortical_pyramidal {
+    model = "adaptive_exponential"
+    threshold = -50.0
+    reset_potential = -70.0
+    a = 0.02
+    b = 0.2
+    d = 8.0
+}
+
+neuron_type cortical_interneuron {
+    model = "leaky_integrate_fire"
+    threshold = -45.0
+    reset_potential = -65.0
+    a = 0.1
+    b = 0.15
+    d = 2.0
+}
+
+neuron_type dopaminergic {
+    model = "adaptive_exponential"
+    threshold = -55.0
+    reset_potential = -75.0
+    a = 0.01
+    b = 0.1
+    d = 6.0
+}
+
+// Regiones cerebrales especializadas
+region prefrontal_cortex {
+    description = "Executive control and decision making"
+    coordinates = [0.0, 5.0, 0.0]
+    size = [15.0, 10.0, 8.0]
+    default_neuron_type = "cortical_pyramidal"
+    
+    population executive_neurons {
+        type = "cortical_pyramidal"
+        size = 5000
+        topology = "grid"
+        dimensions = [25, 20]
+    }
+    
+    population inhibitory_control {
+        type = "cortical_interneuron"
+        size = 12500
+        topology = "grid"
+    }
+}
+
+region language_area {
+    description = "Language processing and comprehension"
+    coordinates = [-10.0, 0.0, 0.0]
+    size = [12.0, 8.0, 6.0]
+    default_neuron_type = "cortical_pyramidal"
+    
+    population language_neurons {
+        type = "cortical_pyramidal"
+        size = 8000
+        topology = "grid"
+        dimensions = [40, 20]
+    }
+    
+    population syntax_processors {
+        type = "cortical_pyramidal"
+        size = 2000
+        topology = "grid"
+    }
+    
+    population semantic_processors {
+        type = "cortical_pyramidal"
+        size = 3000
+        topology = "grid"
+    }
+}
+
+region limbic_system {
+    description = "Emotional processing and memory"
+    coordinates = [0.0, -5.0, -3.0]
+    size = [8.0, 6.0, 4.0]
+    default_neuron_type = "cortical_pyramidal"
+    
+    population emotion_neurons {
+        type = "cortical_pyramidal"
+        size = 3000
+        topology = "grid"
+    }
+    
+    population reward_neurons {
+        type = "dopaminergic"
+        size = 1500
+        topology = "grid"
+    }
+}
+
+// Conexiones inter-regionales
+connect {
+    source = "language_area.language_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "random"
+    weight = 0.4
+    weight_distribution = "normal"
+    weight_mean = 0.0
+    weight_std = 0.08
+    connection_probability = 0.6
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.008
+        tau_pre = 25.0
+        tau_post = 25.0
+        A_plus = 0.12
+        A_minus = 0.15
+    }
+}
+
+connect {
+    source = "prefrontal_cortex.executive_neurons"
+    target = "limbic_system.emotion_neurons"
+    pattern = "random"
+    weight = 0.3
+    connection_probability = 0.4
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.005
+    }
+}
+
+connect {
+    source = "limbic_system.reward_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "random"
+    weight = 0.6
+    connection_probability = 0.8
+}
+
+connect {
+    source = "prefrontal_cortex.inhibitory_control"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "random"
+    weight = -0.25
+    connection_probability = 0.7
+}
+
+// Conexiones dentro del área de lenguaje
+connect {
+    source = "language_area.syntax_processors"
+    target = "language_area.semantic_processors"
+    pattern = "random"
+    weight = 0.35
+    connection_probability = 0.9
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.002
+    }
+}
+
+connect {
+    source = "language_area.semantic_processors"
+    target = "language_area.language_neurons"
+    pattern = "full"
+    weight = 0.25
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.01
+    }
+}
+
+// Interfaces especializadas
+input_interface text_input {
+    target_population = "language_area.language_neurons"
+    encoding = "temporal_coding"
+    normalization = "z_score"
+    preprocessing = ["tokenize", "embed", "normalize"]
+    update_frequency = 50.0
+}
+
+input_interface sensory_input {
+    target_population = "prefrontal_cortex.executive_neurons"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 20.0
+}
+
+output_interface decision_output {
+    source_population = "prefrontal_cortex.executive_neurons"
+    decoding = "rate_based"
+    smoothing = "moving_average"
+    smoothing_factor = 0.8
+}
+
+output_interface language_output {
+    source_population = "language_area.semantic_processors"
+    decoding = "winner_take_all"
+    smoothing = "exponential"
+    smoothing_factor = 0.95
+}
+
+// Protocolo de aprendizaje simplificado
+learning_protocol reinforcement_learning {
+    type = "reinforcement"
+    target_populations = ["prefrontal_cortex.executive_neurons", "limbic_system.reward_neurons"]
+    learning_rate = 0.0005
+    batch_size = 64
+    epochs = 500
+}
+
+learning_protocol language_learning {
+    type = "supervised"
+    target_populations = ["language_area.language_neurons", "language_area.syntax_processors", "language_area.semantic_processors"]
+    learning_rate = 0.001
+    batch_size = 32
+    epochs = 200
+}
+
+// Monitoreo
+monitor comprehensive_monitor {
+    populations = ["prefrontal_cortex.executive_neurons", "language_area.language_neurons", "limbic_system.emotion_neurons", "limbic_system.reward_neurons"]
+    metrics = ["spike_rate", "membrane_potential", "synaptic_weights"]
+    sampling_rate = 2.0
+    window_size = 50.0
+    save_to_file = "advanced_network_monitor.csv"
+}
+
+// Experimento
+experiment cognitive_task {
+    description = "Complex cognitive task with language and decision making"
+    duration = 10000.0
+    training_protocol = "reinforcement_learning"
+    
+    stimulus_protocol {
+        type = "structured_input"
+        target_population = "language_area.language_neurons"
+        pattern = "sequential"
+        amplitude = 20.0
+        duration = 200.0
+        frequency = 5.0
+    }
+    
+    analysis {
+        spike_analysis = true
+        weight_analysis = true
+        performance_metrics = true
+    }
+}
+
+// Visualización
+visualization brain_network {
+    type = "3d_brain_map"
+    populations = ["prefrontal_cortex.executive_neurons", "language_area.language_neurons", "limbic_system.emotion_neurons"]
+    node_size_by = "activity_level"
+    edge_width_by = "synaptic_strength"
+    color_by = "neurotransmitter_type"
+    layout = "anatomical"
+    animation = true
+    export_format = "interactive_html"
+}
+
+// Configuración de guardado
+model_save {
+    enabled = true
+    save_path = "models/advanced_cognitive_model"
+    save_frequency = 100
+    save_weights = true
+    save_topology = true
+    save_learning_state = true
+    compression = false
+    format = "binary"
+}

@@ -1,0 +1,397 @@
+// Red neuronal con conexiones optimizadas según recomendaciones de DeepSeek
+// Aumentando probabilidades en áreas críticas para mejor funcionalidad
+
+# Configuración básica de la red
+network "enhanced_scaled_network" {
+    type: "feedforward"
+    layers: 6
+    neurons_per_layer: [1024, 512, 256, 128, 64, 10]
+    activation: "relu"
+}
+
+# Configuración SIMD optimizada para Ryzen 5 3500
+simd_optimization "ryzen_optimized" {
+    enabled: true
+    auto_detect: true
+    force_avx2: true
+    force_fma: true
+    use_scalar_fallback: true
+    
+    vectorize_activation: true
+    vectorize_matrix_ops: true
+    vectorize_convolution: true
+    vectorize_pooling: true
+    vectorize_attention: true
+    
+    memory_alignment: 32
+    use_prefetching: true
+    prefetch_locality: 3
+    
+    unroll_factor: 6
+    block_size: 1024
+    
+    enable_benchmarking: true
+    
+    override_sigmoid: true
+    override_tanh: true
+    override_relu: true
+    override_matrix_mul: true
+}
+
+// Configuración global mejorada
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.01
+    noise_level = 0.005
+    random_seed = 123456
+    parallel_processing = true
+    gpu_acceleration = true
+    
+    connection_sparsity = 0.15  // Reducido para más conexiones según DeepSeek
+    memory_optimization = true
+    batch_processing = true
+    thread_count = 6
+}
+
+// Tipos de neuronas optimizadas
+neuron_type fast_cortical {
+    model = "leaky_integrate_fire"
+    threshold = -50.0
+    reset_potential = -70.0
+    tau_membrane = 20.0
+    resistance = 10.0
+}
+
+neuron_type fast_inhibitory {
+    model = "leaky_integrate_fire"
+    threshold = -45.0
+    reset_potential = -65.0
+    tau_membrane = 10.0
+    resistance = 8.0
+}
+
+// Regiones cerebrales con tamaños optimizados
+region prefrontal_cortex {
+    description = "Executive control - enhanced connectivity"
+    coordinates = [0.0, 5.0, 0.0]
+    size = [20.0, 15.0, 10.0]
+    default_neuron_type = "fast_cortical"
+    
+    population executive_neurons {
+        type = "fast_cortical"
+        size = 15000
+        topology = "grid"
+        dimensions = [100, 15]
+    }
+    
+    population inhibitory_control {
+        type = "fast_inhibitory"
+        size = 25000  // Ratio 1.67:1 como identificó DeepSeek
+        topology = "grid"
+    }
+}
+
+region language_area {
+    description = "Language processing - enhanced"
+    coordinates = [-15.0, 0.0, 0.0]
+    size = [18.0, 12.0, 8.0]
+    default_neuron_type = "fast_cortical"
+    
+    population language_neurons {
+        type = "fast_cortical"
+        size = 20000
+        topology = "grid"
+        dimensions = [100, 20]
+    }
+    
+    population syntax_processors {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+    
+    population semantic_processors {
+        type = "fast_cortical"
+        size = 12000
+        topology = "grid"
+    }
+}
+
+region limbic_system {
+    description = "Emotional processing - dopaminergic pathways"
+    coordinates = [0.0, -8.0, -5.0]
+    size = [12.0, 8.0, 6.0]
+    default_neuron_type = "fast_cortical"
+    
+    population emotion_neurons {
+        type = "fast_cortical"
+        size = 10000
+        topology = "grid"
+    }
+    
+    population reward_neurons {
+        type = "fast_cortical"
+        size = 5000
+        topology = "grid"
+    }
+}
+
+region working_memory {
+    description = "Working memory system - cognitive buffer"
+    coordinates = [5.0, 0.0, 5.0]
+    size = [10.0, 8.0, 6.0]
+    default_neuron_type = "fast_cortical"
+    
+    population memory_buffer {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+    
+    population attention_control {
+        type = "fast_cortical"
+        size = 6000
+        topology = "grid"
+    }
+}
+
+region sensory_processing {
+    description = "Sensory input processing - multisensory integration"
+    coordinates = [-5.0, -5.0, 0.0]
+    size = [8.0, 6.0, 4.0]
+    default_neuron_type = "fast_cortical"
+    
+    population visual_processors {
+        type = "fast_cortical"
+        size = 12000
+        topology = "grid"
+    }
+    
+    population auditory_processors {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+}
+
+// CONEXIONES CRÍTICAS MEJORADAS según recomendación de DeepSeek
+// Aumentando probabilidades en áreas críticas (0.05-0.1)
+
+connect {
+    source = "language_area.language_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.08  // Aumentado de 0.15 a 0.08 (área crítica)
+    
+    plasticity {
+        type = "simple_hebbian"  // Preparando para STDP
+        learning_rate = 0.01
+    }
+}
+
+connect {
+    source = "prefrontal_cortex.executive_neurons"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.5
+    connection_probability = 0.1  // Aumentado (área crítica ejecutivo-memoria)
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.008
+    }
+}
+
+connect {
+    source = "working_memory.attention_control"
+    target = "language_area.language_neurons"
+    pattern = "sparse"
+    weight = 0.3
+    connection_probability = 0.06  // Aumentado para mejor control atencional
+}
+
+connect {
+    source = "sensory_processing.visual_processors"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.05  // Área crítica sensorial-memoria
+}
+
+connect {
+    source = "sensory_processing.auditory_processors"
+    target = "language_area.syntax_processors"
+    pattern = "sparse"
+    weight = 0.45
+    connection_probability = 0.07  // Crítico: audio → sintaxis (DeepSeek lo identificó)
+}
+
+connect {
+    source = "limbic_system.reward_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.6
+    connection_probability = 0.05  // Rutas dopaminérgicas (como identificó DeepSeek)
+}
+
+connect {
+    source = "prefrontal_cortex.inhibitory_control"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = -0.25
+    connection_probability = 0.06  // Control inhibitorio mejorado
+}
+
+connect {
+    source = "language_area.syntax_processors"
+    target = "language_area.semantic_processors"
+    pattern = "sparse"
+    weight = 0.35
+    connection_probability = 0.08  // Procesamiento jerárquico (sintaxis → semántica)
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.005
+    }
+}
+
+connect {
+    source = "language_area.semantic_processors"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.07  // Semántica → memoria de trabajo
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.01
+    }
+}
+
+// NUEVAS CONEXIONES CRÍTICAS identificadas por DeepSeek
+connect {
+    source = "working_memory.memory_buffer"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.45
+    connection_probability = 0.09  // Feedback memoria → ejecutivo (CRÍTICO)
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.012
+    }
+}
+
+connect {
+    source = "limbic_system.emotion_neurons"
+    target = "language_area.language_neurons"
+    pattern = "sparse"
+    weight = 0.3
+    connection_probability = 0.04  // Emoción → lenguaje (procesamiento afectivo)
+}
+
+connect {
+    source = "sensory_processing.visual_processors"
+    target = "sensory_processing.auditory_processors"
+    pattern = "sparse"
+    weight = 0.25
+    connection_probability = 0.03  // Integración multisensorial
+}
+
+// Interfaces optimizadas
+input_interface visual_input {
+    target_population = "sensory_processing.visual_processors"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 30.0
+}
+
+input_interface auditory_input {
+    target_population = "sensory_processing.auditory_processors"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 25.0
+}
+
+input_interface text_input {
+    target_population = "language_area.language_neurons"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 20.0
+}
+
+output_interface decision_output {
+    source_population = "prefrontal_cortex.executive_neurons"
+    decoding = "rate_based"
+    smoothing = "none"
+}
+
+output_interface memory_output {
+    source_population = "working_memory.memory_buffer"
+    decoding = "rate_based"
+    smoothing = "none"
+}
+
+output_interface language_output {
+    source_population = "language_area.semantic_processors"
+    decoding = "rate_based"
+    smoothing = "none"
+}
+
+// Protocolo de aprendizaje preparado para STDP
+learning_protocol enhanced_learning {
+    type = "hebbian"  // Base para implementar STDP después
+    target_populations = [
+        "prefrontal_cortex.executive_neurons", 
+        "language_area.language_neurons",
+        "working_memory.memory_buffer",
+        "language_area.syntax_processors",
+        "language_area.semantic_processors"
+    ]
+    learning_rate = 0.001
+    batch_size = 256
+    epochs = 300  // Más épocas para mejor aprendizaje
+}
+
+// Monitoreo mejorado
+monitor cognitive_monitor {
+    populations = [
+        "prefrontal_cortex.executive_neurons",
+        "working_memory.memory_buffer",
+        "language_area.language_neurons",
+        "limbic_system.reward_neurons"
+    ]
+    metrics = ["spike_rate", "connection_strength"]
+    sampling_rate = 0.5
+    window_size = 200.0
+}
+
+// Experimento cognitivo complejo
+experiment cognitive_architecture_test {
+    description = "Enhanced cognitive architecture with improved connectivity (DeepSeek recommendations)"
+    duration = 10000.0
+    training_protocol = "enhanced_learning"
+    
+    stimulus_protocol {
+        type = "multi_modal_cognitive"
+        target_population = "sensory_processing.visual_processors"
+        pattern = "complex_hierarchical"
+        amplitude = 25.0
+        duration = 200.0
+        frequency = 2.5
+    }
+}
+
+// Configuración de guardado optimizada
+model_save {
+    enabled = true
+    save_path = "models/enhanced_cognitive_model"
+    save_frequency = 1500
+    save_weights = true
+    save_topology = true  // Guardar topología para análisis
+    save_learning_state = true  // Para continuar entrenamiento
+    compression = true
+    format = "binary"
+}

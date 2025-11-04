@@ -1,0 +1,585 @@
+// Sistema de Procesamiento de Lenguaje Natural con Transformers
+// Implementación de comprensión y generación de texto avanzada
+
+// Configuración global para NLP
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.0005
+    noise_level = 0.001
+    random_seed = 789123
+    parallel_processing = true
+    gpu_acceleration = true
+    max_sequence_length = 512
+    vocabulary_size = 50000
+    embedding_dimension = 768
+}
+
+// Tipos de neuronas especializadas para NLP
+neuron_type embedding_neuron {
+    model = "MEMORY_CELL"
+    threshold = -35.0
+    reset_potential = -55.0
+    embedding_dim = 768
+    vocab_size = 50000
+    padding_idx = 0
+}
+
+neuron_type attention_neuron {
+    model = "ATTENTION_UNIT"
+    threshold = -30.0
+    reset_potential = -50.0
+    num_heads = 12
+    head_dim = 64
+    dropout = 0.1
+}
+
+neuron_type transformer_neuron {
+    model = "TRANSFORMER"
+    threshold = -25.0
+    reset_potential = -45.0
+    d_model = 768
+    d_ff = 3072
+    num_layers = 12
+    dropout = 0.1
+}
+
+neuron_type language_model_neuron {
+    model = "GRU"
+    threshold = -20.0
+    reset_potential = -40.0
+    hidden_size = 768
+    num_layers = 6
+    bidirectional = true
+}
+
+neuron_type classification_neuron {
+    model = "EXECUTIVE_CONTROLLER"
+    threshold = -15.0
+    reset_potential = -35.0
+    num_classes = 1000
+    decision_threshold = 0.5
+}
+
+// Regiones de procesamiento de lenguaje
+region token_embedding {
+    description = "Token and positional embedding layer"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [512.0, 768.0, 1.0]
+    default_neuron_type = "embedding_neuron"
+    
+    population word_embeddings {
+        type = "embedding_neuron"
+        neurons = 38400000  // 50000 * 768
+        topology = "embedding_matrix"
+        dimensions = [50000, 768]
+        trainable = true
+        initialization = "xavier_uniform"
+    }
+    
+    population positional_embeddings {
+        type = "embedding_neuron"
+        neurons = 393216  // 512 * 768
+        topology = "embedding_matrix"
+        dimensions = [512, 768]
+        trainable = true
+        encoding_type = "sinusoidal"
+    }
+    
+    population segment_embeddings {
+        type = "embedding_neuron"
+        neurons = 1536  // 2 * 768
+        topology = "embedding_matrix"
+        dimensions = [2, 768]
+        trainable = true
+    }
+}
+
+region encoder_stack {
+    description = "Multi-layer transformer encoder"
+    coordinates = [0.0, 10.0, 0.0]
+    size = [512.0, 768.0, 12.0]
+    default_neuron_type = "transformer_neuron"
+    
+    population self_attention_layers {
+        type = "attention_neuron"
+        neurons = 4718592  // 12 layers * 512 seq * 768 dim
+        topology = "multi_head_attention"
+        dimensions = [12, 512, 768]
+        num_heads = 12
+        attention_type = "self_attention"
+    }
+    
+    population feed_forward_layers {
+        type = "transformer_neuron"
+        neurons = 18874368  // 12 layers * 512 seq * 3072 ff_dim
+        topology = "feed_forward"
+        dimensions = [12, 512, 3072]
+        activation = "gelu"
+    }
+    
+    population layer_norm {
+        type = "transformer_neuron"
+        neurons = 4718592  // 12 layers * 512 seq * 768 dim
+        topology = "layer_normalization"
+        dimensions = [12, 512, 768]
+        epsilon = 1e-12
+    }
+}
+
+region decoder_stack {
+    description = "Multi-layer transformer decoder for generation"
+    coordinates = [0.0, -10.0, 0.0]
+    size = [512.0, 768.0, 12.0]
+    default_neuron_type = "transformer_neuron"
+    
+    population masked_attention {
+        type = "attention_neuron"
+        neurons = 4718592
+        topology = "masked_multi_head_attention"
+        dimensions = [12, 512, 768]
+        num_heads = 12
+        attention_type = "causal_self_attention"
+    }
+    
+    population cross_attention {
+        type = "attention_neuron"
+        neurons = 4718592
+        topology = "cross_attention"
+        dimensions = [12, 512, 768]
+        num_heads = 12
+        attention_type = "encoder_decoder_attention"
+    }
+    
+    population decoder_ff {
+        type = "transformer_neuron"
+        neurons = 18874368
+        topology = "feed_forward"
+        dimensions = [12, 512, 3072]
+        activation = "gelu"
+    }
+}
+
+region language_understanding {
+    description = "High-level language comprehension"
+    coordinates = [20.0, 0.0, 0.0]
+    size = [768.0, 512.0, 8.0]
+    default_neuron_type = "language_model_neuron"
+    
+    population semantic_analyzer {
+        type = "language_model_neuron"
+        neurons = 1572864  // 512 * 768 * 4
+        topology = "bidirectional_lstm"
+        dimensions = [512, 768, 4]
+        semantic_roles = true
+    }
+    
+    population syntactic_parser {
+        type = "language_model_neuron"
+        neurons = 786432  // 512 * 768 * 2
+        topology = "tree_lstm"
+        dimensions = [512, 768, 2]
+        parse_tree_depth = 20
+    }
+    
+    population discourse_analyzer {
+        type = "language_model_neuron"
+        neurons = 393216  // 512 * 768
+        topology = "hierarchical_attention"
+        dimensions = [512, 768]
+        context_window = 1024
+    }
+}
+
+region task_specific_heads {
+    description = "Task-specific output layers"
+    coordinates = [-20.0, 0.0, 0.0]
+    size = [768.0, 1000.0, 5.0]
+    default_neuron_type = "classification_neuron"
+    
+    population classification_head {
+        type = "classification_neuron"
+        neurons = 768000  // 768 * 1000
+        topology = "fully_connected"
+        dimensions = [768, 1000]
+        task_type = "text_classification"
+    }
+    
+    population qa_head {
+        type = "classification_neuron"
+        neurons = 1536  // 768 * 2 (start, end)
+        topology = "span_prediction"
+        dimensions = [768, 2]
+        task_type = "question_answering"
+    }
+    
+    population ner_head {
+        type = "classification_neuron"
+        neurons = 7680  // 768 * 10 entity types
+        topology = "sequence_labeling"
+        dimensions = [768, 10]
+        task_type = "named_entity_recognition"
+    }
+    
+    population generation_head {
+        type = "classification_neuron"
+        neurons = 38400000  // 768 * 50000 vocab
+        topology = "language_modeling"
+        dimensions = [768, 50000]
+        task_type = "text_generation"
+    }
+}
+
+// Conexiones de embedding
+connect {
+    source = "token_embedding.word_embeddings"
+    target = "encoder_stack.self_attention_layers"
+    pattern = "embedding_lookup"
+    weight = 1.0
+    
+    plasticity {
+        type = "embedding_learning"
+        learning_rate = 0.0001
+        weight_decay = 0.01
+    }
+}
+
+connect {
+    source = "token_embedding.positional_embeddings"
+    target = "encoder_stack.self_attention_layers"
+    pattern = "positional_encoding"
+    weight = 1.0
+    
+    plasticity {
+        type = "positional_learning"
+        learning_rate = 0.00001
+    }
+}
+
+// Conexiones del encoder
+connect {
+    source = "encoder_stack.self_attention_layers"
+    target = "encoder_stack.feed_forward_layers"
+    pattern = "attention_to_ff"
+    weight = 0.8
+    
+    plasticity {
+        type = "transformer_learning"
+        learning_rate = 0.0001
+        gradient_clipping = 1.0
+        warmup_steps = 10000
+    }
+}
+
+connect {
+    source = "encoder_stack.feed_forward_layers"
+    target = "encoder_stack.layer_norm"
+    pattern = "residual_connection"
+    weight = 1.0
+    
+    plasticity {
+        type = "layer_norm_learning"
+        learning_rate = 0.0001
+    }
+}
+
+// Conexiones encoder-decoder
+connect {
+    source = "encoder_stack.layer_norm"
+    target = "decoder_stack.cross_attention"
+    pattern = "encoder_decoder_attention"
+    weight = 0.7
+    
+    plasticity {
+        type = "cross_attention_learning"
+        learning_rate = 0.0001
+        attention_dropout = 0.1
+    }
+}
+
+connect {
+    source = "decoder_stack.masked_attention"
+    target = "decoder_stack.cross_attention"
+    pattern = "decoder_self_to_cross"
+    weight = 0.6
+    
+    plasticity {
+        type = "causal_attention_learning"
+        learning_rate = 0.0001
+        causal_mask = true
+    }
+}
+
+// Conexiones a comprensión de lenguaje
+connect {
+    source = "encoder_stack.layer_norm"
+    target = "language_understanding.semantic_analyzer"
+    pattern = "semantic_projection"
+    weight = 0.5
+    
+    plasticity {
+        type = "semantic_learning"
+        learning_rate = 0.0005
+        semantic_regularization = 0.01
+    }
+}
+
+connect {
+    source = "language_understanding.semantic_analyzer"
+    target = "language_understanding.syntactic_parser"
+    pattern = "semantic_to_syntax"
+    weight = 0.4
+    
+    plasticity {
+        type = "syntax_learning"
+        learning_rate = 0.0003
+        parse_tree_loss = true
+    }
+}
+
+connect {
+    source = "language_understanding.syntactic_parser"
+    target = "language_understanding.discourse_analyzer"
+    pattern = "syntax_to_discourse"
+    weight = 0.3
+    
+    plasticity {
+        type = "discourse_learning"
+        learning_rate = 0.0002
+        coherence_loss = true
+    }
+}
+
+// Conexiones a cabezas específicas
+connect {
+    source = "language_understanding.discourse_analyzer"
+    target = "task_specific_heads.classification_head"
+    pattern = "classification_projection"
+    weight = 0.6
+    
+    plasticity {
+        type = "classification_learning"
+        learning_rate = 0.001
+        class_weights = "balanced"
+    }
+}
+
+connect {
+    source = "encoder_stack.layer_norm"
+    target = "task_specific_heads.qa_head"
+    pattern = "span_prediction"
+    weight = 0.7
+    
+    plasticity {
+        type = "span_learning"
+        learning_rate = 0.0005
+        span_loss_weight = 1.0
+    }
+}
+
+connect {
+    source = "decoder_stack.decoder_ff"
+    target = "task_specific_heads.generation_head"
+    pattern = "language_modeling"
+    weight = 0.8
+    
+    plasticity {
+        type = "generation_learning"
+        learning_rate = 0.0001
+        label_smoothing = 0.1
+    }
+}
+
+// Interfaces de entrada
+input_interface text_input {
+    target_population = "token_embedding.word_embeddings"
+    encoding = "token_ids"
+    normalization = "none"
+    preprocessing = ["tokenize", "encode", "pad"]
+    update_frequency = 1.0
+    max_length = 512
+}
+
+input_interface context_input {
+    target_population = "language_understanding.discourse_analyzer"
+    encoding = "contextual_embedding"
+    normalization = "layer_norm"
+    preprocessing = ["context_window", "attention_mask"]
+    update_frequency = 1.0
+}
+
+// Interfaces de salida
+output_interface text_classification {
+    source_population = "task_specific_heads.classification_head"
+    encoding = "class_probabilities"
+    postprocessing = ["softmax", "argmax"]
+    output_format = "class_labels"
+}
+
+output_interface text_generation {
+    source_population = "task_specific_heads.generation_head"
+    encoding = "token_probabilities"
+    postprocessing = ["beam_search", "nucleus_sampling"]
+    output_format = "generated_text"
+    generation_config = {
+        "max_length" = 100,
+        "temperature" = 0.8,
+        "top_p" = 0.9,
+        "repetition_penalty" = 1.1
+    }
+}
+
+output_interface question_answering {
+    source_population = "task_specific_heads.qa_head"
+    encoding = "span_positions"
+    postprocessing = ["span_extraction", "confidence_scoring"]
+    output_format = "answer_text"
+}
+
+// Protocolos de entrenamiento
+learning_protocol bert_pretraining {
+    type = "self_supervised"
+    tasks = ["masked_language_modeling", "next_sentence_prediction"]
+    masking_probability = 0.15
+    learning_rate = 0.0001
+    batch_size = 32
+    max_steps = 1000000
+    warmup_steps = 10000
+    
+    optimizer = "adamw"
+    weight_decay = 0.01
+    gradient_clipping = 1.0
+}
+
+learning_protocol fine_tuning {
+    type = "supervised"
+    task_specific = true
+    learning_rate = 0.00002
+    batch_size = 16
+    epochs = 3
+    warmup_ratio = 0.1
+    
+    early_stopping = {
+        "patience" = 3,
+        "metric" = "validation_accuracy",
+        "min_delta" = 0.001
+    }
+}
+
+learning_protocol few_shot_learning {
+    type = "meta_learning"
+    support_shots = 5
+    query_shots = 15
+    meta_learning_rate = 0.001
+    inner_learning_rate = 0.01
+    adaptation_steps = 5
+}
+
+// Monitoreo del sistema NLP
+monitoring nlp_metrics {
+    perplexity_threshold = 10.0
+    bleu_score_threshold = 0.3
+    rouge_score_threshold = 0.4
+    
+    metrics = [
+        "perplexity",
+        "bleu_score",
+        "rouge_score",
+        "bert_score",
+        "attention_entropy",
+        "gradient_norm"
+    ]
+    
+    linguistic_analysis = [
+        "syntactic_complexity",
+        "semantic_coherence",
+        "discourse_structure",
+        "entity_consistency"
+    ]
+}
+
+// Experimentos de NLP
+experiment text_classification {
+    description = "Multi-class text classification"
+    dataset = "imdb_reviews"
+    num_classes = 2
+    training_samples = 25000
+    validation_samples = 5000
+    test_samples = 25000
+    
+    evaluation_metrics = [
+        "accuracy",
+        "precision",
+        "recall",
+        "f1_score",
+        "confusion_matrix"
+    ]
+}
+
+experiment question_answering {
+    description = "Extractive question answering"
+    dataset = "squad_v2"
+    has_answer_ratio = 0.7
+    training_samples = 130000
+    validation_samples = 12000
+    
+    evaluation_metrics = [
+        "exact_match",
+        "f1_score",
+        "has_answer_accuracy",
+        "no_answer_accuracy"
+    ]
+}
+
+experiment text_generation {
+    description = "Conditional text generation"
+    dataset = "common_crawl"
+    context_length = 256
+    generation_length = 128
+    
+    evaluation_metrics = [
+        "perplexity",
+        "bleu_score",
+        "diversity_metrics",
+        "human_evaluation"
+    ]
+}
+
+// Configuración de visualización
+visualization transformer_analysis {
+    show_attention_weights = true
+    show_layer_activations = true
+    show_embedding_space = true
+    show_generation_process = true
+    
+    attention_visualization = {
+        "head_view" = true,
+        "model_view" = true,
+        "neuron_view" = true
+    }
+    
+    interactive_features = [
+        "attention_rollout",
+        "gradient_attribution",
+        "layer_wise_relevance"
+    ]
+}
+
+// Configuración de guardado
+save_config nlp_model {
+    save_pretrained_weights = true
+    save_tokenizer = true
+    save_config = true
+    save_training_args = true
+    
+    checkpoint_frequency = 5000
+    best_model_metric = "validation_loss"
+    model_format = "huggingface"
+    
+    deployment_config = {
+        "optimize_for_inference" = true,
+        "quantization" = "int8",
+        "onnx_export" = true,
+        "tensorrt_optimization" = true
+    }
+}

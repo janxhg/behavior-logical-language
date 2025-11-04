@@ -1,0 +1,110 @@
+/*
+ * Ejemplo de configuración de debug en BrainLL
+ * Este archivo demuestra cómo controlar los mensajes de debug desde el archivo .bll
+ */
+
+// Configuración de debug - debe ir al principio del archivo
+debug {
+    enabled = true          // Habilita el modo debug
+    level = 4              // Nivel de debug: 0=SILENT, 1=ERROR, 2=WARNING, 3=INFO, 4=VERBOSE, 5=DEBUG
+    verbose = false        // Modo verbose (equivale a level=4)
+    quiet = false          // Modo silencioso (equivale a level=1)
+    show_timestamps = true // Mostrar timestamps en mensajes (funcionalidad futura)
+    log_file = "debug.log" // Archivo de log (funcionalidad futura)
+}
+
+// Configuración global del sistema
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    random_seed = 42
+    parallel_processing = true
+    gpu_acceleration = false
+}
+
+// Definir tipos de neuronas
+neuron_type excitatory {
+    model = "LIF"
+    threshold = -50.0
+    reset_potential = -70.0
+}
+
+neuron_type inhibitory {
+    model = "LIF"
+    threshold = -45.0
+    reset_potential = -65.0
+}
+
+// Crear una región simple
+region cortex {
+    size = [100, 100]
+    neuron_density = 0.8
+}
+
+// Crear poblaciones
+population excitatory_neurons {
+    region = cortex
+    size = 800
+    neuron_type = excitatory
+    position = random
+}
+
+population inhibitory_neurons {
+    region = cortex
+    size = 200
+    neuron_type = inhibitory
+    position = random
+}
+
+// Conectar poblaciones
+connect {
+    source = excitatory_neurons
+    target = inhibitory_neurons
+    pattern = random
+    probability = 0.2
+    weight = 0.5
+    delay = 1.0
+}
+
+connect {
+    source = inhibitory_neurons
+    target = excitatory_neurons
+    pattern = random
+    probability = 0.3
+    weight = -0.8
+    delay = 1.0
+}
+
+// Configurar entrada
+input_interface main_input {
+    target = excitatory_neurons
+    type = poisson
+    rate = 10.0
+    duration = 1000.0
+}
+
+// Configurar salida
+output_interface main_output {
+    source = excitatory_neurons
+    type = spike_count
+    window = 100.0
+}
+
+// Protocolo de aprendizaje
+learning_protocol stdp {
+    type = "STDP"
+    tau_pre = 20.0
+    tau_post = 20.0
+    A_plus = 0.01
+    A_minus = 0.012
+    w_max = 1.0
+    w_min = 0.0
+}
+
+// Monitor para observar la actividad
+monitor activity_monitor {
+    target = excitatory_neurons
+    variables = ["voltage", "spikes"]
+    sampling_rate = 1.0
+    output_file = "activity.dat"
+}

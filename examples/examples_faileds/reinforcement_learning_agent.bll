@@ -1,0 +1,485 @@
+// Ejemplo de red neuronal para aprendizaje por refuerzo
+// Demuestra Q-learning y redes actor-crítico
+
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.001
+    noise_level = 0.02
+    random_seed = 13579
+    parallel_processing = true
+    gpu_acceleration = true
+    reinforcement_learning = true
+}
+
+// Tipos de neuronas para RL
+neuron_type state_encoder {
+    model = "ADAPTIVE_LIF"
+    threshold = 30.0
+    reset_potential = -65.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 12.0
+    refractory_period = 2.0
+    adaptation_strength = 0.02
+    adaptation_time_constant = 75.0
+}
+
+neuron_type value_neuron {
+    model = "IZHIKEVICH"
+    threshold = 35.0
+    reset_potential = -60.0
+    a = 0.02
+    b = 0.2
+    c = -65.0
+    d = 8.0
+    value_function = true
+}
+
+neuron_type policy_neuron {
+    model = "FAST_SPIKING"
+    threshold = 25.0
+    reset_potential = -70.0
+    a = 0.1
+    b = 0.2
+    c = -65.0
+    d = 2.0
+    action_selection = true
+}
+
+neuron_type reward_neuron {
+    model = "REGULAR_SPIKING"
+    threshold = 20.0
+    reset_potential = -75.0
+    a = 0.02
+    b = 0.2
+    c = -65.0
+    d = 8.0
+    reward_processing = true
+}
+
+neuron_type critic_neuron {
+    model = "LSTM"
+    threshold = 30.0
+    reset_potential = -65.0
+    hidden_size = 64
+    input_size = 32
+    output_size = 1
+    critic_function = true
+}
+
+// Región de codificación del estado
+region state_representation {
+    description = "State encoding and representation"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [15.0, 15.0, 8.0]
+    default_neuron_type = "state_encoder"
+    
+    population state_input {
+        type = "state_encoder"
+        neurons = 100
+        topology = "grid"
+        dimensions = [10, 10]
+        state_dimensions = 4
+    }
+    
+    population state_features {
+        type = "state_encoder"
+        neurons = 64
+        topology = "grid"
+        dimensions = [8, 8]
+        feature_extraction = true
+    }
+}
+
+// Red actor (política)
+region actor_network {
+    description = "Actor network for policy learning"
+    coordinates = [20.0, 0.0, 0.0]
+    size = [12.0, 10.0, 6.0]
+    default_neuron_type = "policy_neuron"
+    
+    population policy_hidden_1 {
+        type = "policy_neuron"
+        neurons = 128
+        topology = "grid"
+        dimensions = [16, 8]
+    }
+    
+    population policy_hidden_2 {
+        type = "policy_neuron"
+        neurons = 64
+        topology = "grid"
+        dimensions = [8, 8]
+    }
+    
+    population action_output {
+        type = "policy_neuron"
+        neurons = 4  // 4 acciones posibles
+        topology = "grid"
+        dimensions = [4, 1]
+        action_space = "discrete"
+    }
+}
+
+// Red crítico (función de valor)
+region critic_network {
+    description = "Critic network for value estimation"
+    coordinates = [35.0, 0.0, 0.0]
+    size = [12.0, 10.0, 6.0]
+    default_neuron_type = "critic_neuron"
+    
+    population value_hidden_1 {
+        type = "value_neuron"
+        neurons = 128
+        topology = "grid"
+        dimensions = [16, 8]
+    }
+    
+    population value_hidden_2 {
+        type = "critic_neuron"
+        neurons = 64
+        topology = "grid"
+        dimensions = [8, 8]
+    }
+    
+    population value_output {
+        type = "value_neuron"
+        neurons = 1
+        topology = "single"
+        value_estimation = true
+    }
+}
+
+// Sistema de recompensas
+region reward_system {
+    description = "Reward processing and TD error computation"
+    coordinates = [50.0, 0.0, 0.0]
+    size = [10.0, 8.0, 5.0]
+    default_neuron_type = "reward_neuron"
+    
+    population reward_input {
+        type = "reward_neuron"
+        neurons = 10
+        topology = "grid"
+        dimensions = [10, 1]
+        reward_signal = true
+    }
+    
+    population td_error {
+        type = "reward_neuron"
+        neurons = 1
+        topology = "single"
+        td_computation = true
+    }
+}
+
+// Conexiones del codificador de estado
+connect {
+    source = "state_representation.state_input"
+    target = "state_representation.state_features"
+    pattern = "full"
+    weight = 0.3
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "hebbian"
+        learning_rate = 0.001
+        decay_rate = 0.0001
+    }
+}
+
+// Conexiones actor
+connect {
+    source = "state_representation.state_features"
+    target = "actor_network.policy_hidden_1"
+    pattern = "full"
+    weight = 0.2
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "policy_gradient"
+        learning_rate = 0.0003
+        entropy_coefficient = 0.01
+        value_coefficient = 0.5
+    }
+}
+
+connect {
+    source = "actor_network.policy_hidden_1"
+    target = "actor_network.policy_hidden_2"
+    pattern = "full"
+    weight = 0.25
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "policy_gradient"
+        learning_rate = 0.0003
+        entropy_coefficient = 0.01
+    }
+}
+
+connect {
+    source = "actor_network.policy_hidden_2"
+    target = "actor_network.action_output"
+    pattern = "full"
+    weight = 0.3
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "policy_gradient"
+        learning_rate = 0.0003
+        entropy_coefficient = 0.01
+    }
+}
+
+// Conexiones crítico
+connect {
+    source = "state_representation.state_features"
+    target = "critic_network.value_hidden_1"
+    pattern = "full"
+    weight = 0.2
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "value_learning"
+        learning_rate = 0.001
+        target_update_frequency = 100
+    }
+}
+
+connect {
+    source = "critic_network.value_hidden_1"
+    target = "critic_network.value_hidden_2"
+    pattern = "full"
+    weight = 0.25
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "value_learning"
+        learning_rate = 0.001
+    }
+}
+
+connect {
+    source = "critic_network.value_hidden_2"
+    target = "critic_network.value_output"
+    pattern = "full"
+    weight = 0.3
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "value_learning"
+        learning_rate = 0.001
+    }
+}
+
+// Conexiones de recompensa y TD error
+connect {
+    source = "reward_system.reward_input"
+    target = "reward_system.td_error"
+    pattern = "full"
+    weight = 1.0
+    td_computation = true
+}
+
+connect {
+    source = "critic_network.value_output"
+    target = "reward_system.td_error"
+    pattern = "full"
+    weight = -1.0
+    td_computation = true
+}
+
+// Retroalimentación del TD error al actor y crítico
+connect {
+    source = "reward_system.td_error"
+    target = "actor_network.policy_hidden_1"
+    pattern = "broadcast"
+    weight = 0.1
+    modulation_type = "multiplicative"
+    
+    plasticity {
+        type = "td_learning"
+        learning_rate = 0.0003
+        discount_factor = 0.99
+    }
+}
+
+connect {
+    source = "reward_system.td_error"
+    target = "critic_network.value_hidden_1"
+    pattern = "broadcast"
+    weight = 0.1
+    modulation_type = "multiplicative"
+    
+    plasticity {
+        type = "td_learning"
+        learning_rate = 0.001
+        discount_factor = 0.99
+    }
+}
+
+// Interfaces
+input_interface environment_state {
+    target_population = "state_representation.state_input"
+    encoding = "continuous_values"
+    normalization = "min_max"
+    update_frequency = 10.0
+    state_dimensions = 4
+}
+
+input_interface reward_signal {
+    target_population = "reward_system.reward_input"
+    encoding = "scalar_value"
+    normalization = "none"
+    update_frequency = 10.0
+    reward_range = [-1.0, 1.0]
+}
+
+output_interface action_selection {
+    source_population = "actor_network.action_output"
+    decoding = "softmax"
+    action_type = "discrete"
+    num_actions = 4
+    exploration_strategy = "epsilon_greedy"
+    epsilon = 0.1
+    epsilon_decay = 0.995
+    min_epsilon = 0.01
+}
+
+output_interface value_estimation {
+    source_population = "critic_network.value_output"
+    decoding = "linear"
+    value_range = [-100.0, 100.0]
+}
+
+// Protocolo de aprendizaje por refuerzo
+learning_protocol actor_critic_learning {
+    type = "actor_critic"
+    target_populations = ["actor_network.policy_hidden_1", "actor_network.policy_hidden_2", "actor_network.action_output", "critic_network.value_hidden_1", "critic_network.value_hidden_2", "critic_network.value_output"]
+    actor_learning_rate = 0.0003
+    critic_learning_rate = 0.001
+    discount_factor = 0.99
+    gae_lambda = 0.95
+    entropy_coefficient = 0.01
+    value_coefficient = 0.5
+    max_grad_norm = 0.5
+    batch_size = 64
+    update_frequency = 2048
+    epochs_per_update = 10
+}
+
+learning_protocol q_learning {
+    type = "q_learning"
+    target_populations = ["critic_network.value_output"]
+    learning_rate = 0.001
+    discount_factor = 0.99
+    epsilon = 0.1
+    epsilon_decay = 0.995
+    min_epsilon = 0.01
+    target_update_frequency = 100
+    replay_buffer_size = 10000
+    batch_size = 32
+}
+
+// Monitoreo de RL
+monitor rl_monitor {
+    populations = ["actor_network.action_output", "critic_network.value_output", "reward_system.td_error"]
+    metrics = ["policy_entropy", "value_estimates", "td_error", "episode_reward", "episode_length", "exploration_rate"]
+    sampling_rate = 1.0
+    window_size = 100.0
+    save_to_file = "rl_monitor.csv"
+    save_policy_weights = true
+    save_value_weights = true
+    episode_tracking = true
+}
+
+// Experimento de aprendizaje por refuerzo
+experiment rl_training {
+    description = "Reinforcement learning with actor-critic"
+    duration = 50000.0
+    training_protocol = "actor_critic_learning"
+    
+    environment {
+        type = "cartpole"
+        state_dimensions = 4
+        action_dimensions = 2
+        max_episode_length = 500
+        reward_threshold = 475
+        early_termination = true
+    }
+    
+    training_config {
+        num_episodes = 1000
+        max_steps_per_episode = 500
+        evaluation_frequency = 50
+        evaluation_episodes = 10
+        save_frequency = 100
+    }
+    
+    exploration {
+        strategy = "epsilon_greedy"
+        initial_epsilon = 1.0
+        final_epsilon = 0.01
+        decay_episodes = 500
+    }
+    
+    analysis {
+        spike_analysis = false
+        weight_analysis = true
+        performance_metrics = true
+        episode_rewards = true
+        policy_analysis = true
+        value_function_analysis = true
+        convergence_analysis = true
+    }
+}
+
+// Visualización de RL
+visualization rl_visualization {
+    type = "rl_analysis"
+    populations = ["actor_network.action_output", "critic_network.value_output"]
+    plot_type = "learning_curves"
+    color_by = "episode"
+    layout = "dashboard"
+    animation = true
+    export_format = "interactive_html"
+    
+    policy_visualization {
+        enabled = true
+        visualization_type = "action_probabilities"
+        state_sampling = "uniform"
+        num_samples = 1000
+    }
+    
+    value_function_visualization {
+        enabled = true
+        visualization_type = "value_surface"
+        state_dimensions = [0, 1]  // Visualizar primeras 2 dimensiones
+        resolution = 50
+    }
+    
+    learning_progress {
+        enabled = true
+        metrics = ["episode_reward", "episode_length", "policy_entropy", "value_loss"]
+        smoothing_window = 10
+    }
+}
+
+model_save {
+    enabled = true
+    save_path = "models/rl_agent"
+    save_frequency = 500
+    save_weights = true
+    save_topology = true
+    save_learning_state = true
+    save_replay_buffer = true
+    save_policy = true
+    save_value_function = true
+    compression = true
+    format = "hdf5"
+    checkpoint_best_only = true
+    monitor_metric = "episode_reward"
+    save_optimizer_state = true
+}

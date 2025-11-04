@@ -1,0 +1,86 @@
+// Implementación básica de STDP según recomendación de DeepSeek
+// Δw = η · (pre_spike * post_spike) con ventana temporal
+
+# Configuración de plasticidad STDP
+training "stdp_learning" {
+    algorithm: "stdp"
+    
+    # Parámetros STDP básicos
+    stdp_config {
+        tau_plus: 20.0      # Ventana temporal LTP (ms)
+        tau_minus: 20.0     # Ventana temporal LTD (ms)
+        a_plus: 0.01        # Amplitud LTP
+        a_minus: 0.012      # Amplitud LTD (ligeramente mayor)
+        w_max: 1.0          # Peso máximo
+        w_min: 0.0          # Peso mínimo
+        
+        # Optimización computacional
+        spike_window: 50.0  # Ventana de búsqueda de spikes (ms)
+        update_frequency: 10 # Actualizar cada 10 timesteps
+        batch_updates: true  # Procesar en lotes para eficiencia
+    }
+    
+    # Poblaciones objetivo para STDP
+    target_connections: [
+        "language_area.language_neurons -> prefrontal_cortex.executive_neurons",
+        "prefrontal_cortex.executive_neurons -> working_memory.memory_buffer",
+        "working_memory.memory_buffer -> prefrontal_cortex.executive_neurons",
+        "language_area.syntax_processors -> language_area.semantic_processors",
+        "language_area.semantic_processors -> working_memory.memory_buffer"
+    ]
+    
+    # Configuración de aprendizaje
+    learning_rate: 0.001
+    epochs: 500
+    batch_size: 128
+    
+    # Monitoreo de plasticidad
+    track_weight_changes: true
+    save_plasticity_data: true
+    plasticity_output_path: "models/stdp_analysis"
+}
+
+# Protocolo experimental para validar STDP
+experiment "stdp_validation" {
+    description: "Validación de STDP en arquitectura cognitiva"
+    duration: 15000.0
+    training_protocol: "stdp_learning"
+    
+    # Estímulos para inducir plasticidad
+    stimulus_sequence {
+        # Fase 1: Activación sensorial → lenguaje
+        phase1 {
+            target: "sensory_processing.auditory_processors"
+            pattern: "rhythmic_bursts"
+            frequency: 10.0
+            duration: 2000.0
+            amplitude: 30.0
+        }
+        
+        # Fase 2: Procesamiento ejecutivo
+        phase2 {
+            target: "prefrontal_cortex.executive_neurons"
+            pattern: "sustained_activation"
+            frequency: 5.0
+            duration: 3000.0
+            amplitude: 25.0
+        }
+        
+        # Fase 3: Integración memoria-lenguaje
+        phase3 {
+            target: "working_memory.memory_buffer"
+            pattern: "complex_sequences"
+            frequency: 8.0
+            duration: 2500.0
+            amplitude: 20.0
+        }
+    }
+    
+    # Métricas de validación
+    validation_metrics {
+        measure_spike_timing: true
+        track_connection_strength: true
+        analyze_learning_curves: true
+        compute_plasticity_index: true
+    }
+}

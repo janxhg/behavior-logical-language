@@ -1,0 +1,154 @@
+// Demostración de Sintaxis Flexible BrainLL
+// Este archivo muestra las diferentes formas de especificar parámetros
+
+/* Configuración global con sintaxis mixta */
+global {
+    simulation_timestep = 0.1;
+    learning_enabled: true
+    plasticity_decay = 0.95
+    noise_level: 0.01,
+    random_seed = 42;
+    
+    // Notación científica y expresiones
+    learning_rate = 1e-3;
+    batch_size = 2*16
+    weight_decay: 1.5e-4
+    
+    // Rangos
+    weight_range = 0.1..0.9
+    delay_range: 1.0:5.0
+    
+    realism_mode = "AGI"
+}
+
+// Tipo de neurona con parámetros flexibles
+neuron_type FlexibleLIF {
+    model: "LIF"
+    threshold = -50.0;
+    reset_potential: -80.0
+    membrane_capacitance = 1.0,
+    leak_conductance: 0.05
+    refractory_period = 2.0
+}
+
+// Región con sintaxis mixta
+region VisualCortex {
+    description: "Corteza visual artificial"
+    coordinates = [0.0, 0.0, 0.0];
+    size: [10.0, 10.0, 1.0]
+    default_neuron_type = "FlexibleLIF",
+}
+
+// Población con diferentes formatos
+population InputLayer {
+    region: "VisualCortex"
+    neurons = 784;              // Requerido: 'neurons' o 'size'
+    neuron_type: "FlexibleLIF"  // Requerido: 'neuron_type' o 'type'
+    topology = "grid",
+    dimensions: [28, 28]
+    excitatory_ratio = 0.8;
+    inhibitory_ratio: 0.2
+}
+
+population HiddenLayer {
+    region = "VisualCortex";
+    size: 256                   // Alternativa a 'neurons'
+    type = "FlexibleLIF"        // Alternativa a 'neuron_type'
+    topology: "random"
+}
+
+population OutputLayer {
+    region: "VisualCortex"
+    neurons = 10,
+    neuron_type: "FlexibleLIF"
+    topology = "random";
+}
+
+// Conexiones con sintaxis mejorada
+connect InputToHidden {
+    source: "InputLayer"        // Nuevo formato requerido
+    target = "HiddenLayer"      // Nuevo formato requerido
+    pattern: "random"           // Patrón completamente implementado
+    weight = 1.0;
+    connection_probability: 0.3
+    delay_range = [1.0, 3.0],
+    
+    plasticity {
+        rule: "STDP"            // Tipo básico soportado
+        learning_rate = 0.01;
+        tau_pre: 20.0
+        tau_post = 20.0,
+        A_plus: 0.1
+        A_minus = 0.12;
+    }
+}
+
+connect HiddenToOutput {
+    source = "HiddenLayer";
+    target: "OutputLayer"
+    pattern = "full"            // Patrón completamente implementado
+    weight: 0.5
+    delay_range: [1.0, 2.0]
+    
+    plasticity {
+        rule = "homeostatic",   // Tipo básico soportado
+        learning_rate: 0.005
+        target_rate = 10.0;
+    }
+}
+
+// Conexión con patrón avanzado (genera advertencia)
+connect AdvancedConnection {
+    source: "InputLayer"
+    target = "OutputLayer";
+    pattern: "convolutional"    // Patrón avanzado (implementado como random)
+    weight = 0.1,
+    connection_probability: 0.1
+    
+    plasticity {
+        rule: "BCM"             // Tipo avanzado (experimental)
+        learning_rate = 0.001;
+    }
+}
+
+// Interface de entrada con sintaxis flexible
+input_interface DataInput {
+    target_population: "InputLayer"
+    encoding = "rate_coding";
+    normalization: "min_max"
+    input_size = 784,
+    scaling_factor: 1.0
+}
+
+// Interface de salida
+output_interface ClassificationOutput {
+    source_population = "OutputLayer";
+    decoding: "rate_coding"
+    output_size = 10,
+    threshold: 0.5
+}
+
+// Protocolo de aprendizaje con parámetros mixtos
+learning_protocol SupervisedTraining {
+    type: "supervised"
+    target_populations = ["HiddenLayer", "OutputLayer"];
+    loss_function: "cross_entropy"
+    optimizer = "adam",
+    learning_rate: 1e-3
+    batch_size = 32;
+    epochs: 100
+    
+    // Parámetros del optimizador
+    momentum = 0.9,
+    weight_decay: 1e-4
+    beta1: 0.9
+    beta2 = 0.999;
+}
+
+// Monitor con sintaxis flexible
+monitor NetworkMonitor {
+    populations: ["InputLayer", "HiddenLayer", "OutputLayer"]
+    metrics = ["spike_rate", "membrane_potential"];
+    sampling_rate: 1000.0
+    save_to_file = "monitor_data.csv",
+}

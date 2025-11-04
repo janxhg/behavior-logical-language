@@ -1,0 +1,271 @@
+// Red neuronal optimizada para mejor rendimiento
+// Configuración balanceada entre funcionalidad y eficiencia
+
+# Configuración básica de la red
+network "optimized_network" {
+    type: "feedforward"
+    layers: 4
+    neurons_per_layer: [784, 256, 128, 10]
+    activation: "relu"
+}
+
+# Configuración de optimización SIMD agresiva
+simd_optimization "maximum_performance" {
+    enabled: true
+    auto_detect: true
+    force_avx2: true
+    force_fma: true
+    use_scalar_fallback: true
+    
+    # Vectorizar todas las operaciones posibles
+    vectorize_activation: true
+    vectorize_matrix_ops: true
+    vectorize_convolution: true
+    vectorize_pooling: true
+    vectorize_attention: true
+    
+    # Configuración de memoria optimizada
+    memory_alignment: 32  # AVX2 alignment
+    use_prefetching: true
+    prefetch_locality: 3
+    
+    # Desenrollado agresivo de bucles
+    unroll_factor: 8
+    block_size: 512
+    
+    enable_benchmarking: true
+    
+    # Overrides para máximo rendimiento
+    override_sigmoid: true
+    override_tanh: true
+    override_relu: true
+    override_matrix_mul: true
+}
+
+// Configuración global optimizada
+global {
+    simulation_timestep = 0.1  // Timestep más grande para menos cálculos
+    learning_enabled = true
+    plasticity_decay = 0.01   // Decay más rápido
+    noise_level = 0.005       // Menos ruido
+    random_seed = 123456
+    parallel_processing = true
+    gpu_acceleration = true
+    
+    // Configuraciones de optimización adicionales
+    connection_sparsity = 0.3  // Factor de dispersión para reducir conexiones
+    memory_optimization = true
+    batch_processing = true
+}
+
+// Tipos de neuronas optimizadas (menos variedad, más eficiencia)
+neuron_type fast_cortical {
+    model = "leaky_integrate_fire"  // Modelo más simple y rápido
+    threshold = -50.0
+    reset_potential = -70.0
+    tau_membrane = 20.0
+    resistance = 10.0
+}
+
+neuron_type fast_inhibitory {
+    model = "leaky_integrate_fire"
+    threshold = -45.0
+    reset_potential = -65.0
+    tau_membrane = 10.0  // Más rápido
+    resistance = 8.0
+}
+
+// Regiones cerebrales con tamaños optimizados
+region prefrontal_cortex {
+    description = "Executive control - optimized"
+    coordinates = [0.0, 5.0, 0.0]
+    size = [15.0, 10.0, 8.0]
+    default_neuron_type = "fast_cortical"
+    
+    population executive_neurons {
+        type = "fast_cortical"
+        size = 3000  // Reducido de 5000
+        topology = "grid"
+        dimensions = [30, 10]
+    }
+    
+    population inhibitory_control {
+        type = "fast_inhibitory"
+        size = 7000  // Reducido de 12500
+        topology = "grid"
+    }
+}
+
+region language_area {
+    description = "Language processing - optimized"
+    coordinates = [-10.0, 0.0, 0.0]
+    size = [12.0, 8.0, 6.0]
+    default_neuron_type = "fast_cortical"
+    
+    population language_neurons {
+        type = "fast_cortical"
+        size = 5000  // Reducido de 8000
+        topology = "grid"
+        dimensions = [50, 10]
+    }
+    
+    population syntax_processors {
+        type = "fast_cortical"
+        size = 1500  // Reducido de 2000
+        topology = "grid"
+    }
+    
+    population semantic_processors {
+        type = "fast_cortical"
+        size = 2000  // Reducido de 3000
+        topology = "grid"
+    }
+}
+
+region limbic_system {
+    description = "Emotional processing - optimized"
+    coordinates = [0.0, -5.0, -3.0]
+    size = [8.0, 6.0, 4.0]
+    default_neuron_type = "fast_cortical"
+    
+    population emotion_neurons {
+        type = "fast_cortical"
+        size = 2000  // Reducido de 3000
+        topology = "grid"
+    }
+    
+    population reward_neurons {
+        type = "fast_cortical"  // Simplificado, no dopaminérgico
+        size = 1000  // Reducido de 1500
+        topology = "grid"
+    }
+}
+
+// Conexiones optimizadas con menor densidad
+connect {
+    source = "language_area.language_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"  // Patrón más eficiente
+    weight = 0.4
+    connection_probability = 0.2  // Reducido de 0.6
+    
+    plasticity {
+        type = "simple_hebbian"  // Más simple que STDP
+        learning_rate = 0.01
+    }
+}
+
+connect {
+    source = "prefrontal_cortex.executive_neurons"
+    target = "limbic_system.emotion_neurons"
+    pattern = "sparse"
+    weight = 0.3
+    connection_probability = 0.15  // Reducido de 0.4
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.008
+    }
+}
+
+connect {
+    source = "limbic_system.reward_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.6
+    connection_probability = 0.25  // Reducido de 0.8
+}
+
+connect {
+    source = "prefrontal_cortex.inhibitory_control"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = -0.25
+    connection_probability = 0.2  // Reducido de 0.7
+}
+
+// Conexiones dentro del área de lenguaje - optimizadas
+connect {
+    source = "language_area.syntax_processors"
+    target = "language_area.semantic_processors"
+    pattern = "sparse"
+    weight = 0.35
+    connection_probability = 0.3  // Reducido de 0.9
+    
+    plasticity {
+        type = "simple_hebbian"  // Más simple que backpropagation
+        learning_rate = 0.005
+    }
+}
+
+connect {
+    source = "language_area.semantic_processors"
+    target = "language_area.language_neurons"
+    pattern = "sparse"  // Cambiado de "full"
+    weight = 0.25
+    connection_probability = 0.4
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.01
+    }
+}
+
+// Interfaces simplificadas
+input_interface text_input {
+    target_population = "language_area.language_neurons"
+    encoding = "rate_coding"  // Más simple que temporal_coding
+    normalization = "min_max"
+    update_frequency = 20.0  // Menos frecuente
+}
+
+output_interface decision_output {
+    source_population = "prefrontal_cortex.executive_neurons"
+    decoding = "rate_based"
+    smoothing = "none"  // Sin suavizado para mayor velocidad
+}
+
+// Protocolo de aprendizaje simplificado
+learning_protocol fast_learning {
+    type = "hebbian"  // Más simple que reinforcement
+    target_populations = ["prefrontal_cortex.executive_neurons", "language_area.language_neurons"]
+    learning_rate = 0.001
+    batch_size = 128  // Lotes más grandes
+    epochs = 100      // Menos épocas
+}
+
+// Monitoreo mínimo
+monitor basic_monitor {
+    populations = ["prefrontal_cortex.executive_neurons"]
+    metrics = ["spike_rate"]  // Solo métrica esencial
+    sampling_rate = 1.0       // Menos frecuente
+    window_size = 100.0
+}
+
+// Experimento simplificado
+experiment performance_test {
+    description = "Performance optimized cognitive task"
+    duration = 5000.0  // Duración más corta
+    training_protocol = "fast_learning"
+    
+    stimulus_protocol {
+        type = "simple_input"
+        target_population = "language_area.language_neurons"
+        pattern = "random"
+        amplitude = 15.0
+        duration = 100.0
+        frequency = 2.0
+    }
+}
+
+// Configuración de guardado optimizada
+model_save {
+    enabled = true
+    save_path = "models/optimized_model"
+    save_frequency = 500  // Menos frecuente
+    save_weights = true
+    save_topology = false  // No guardar topología para ahorrar tiempo
+    save_learning_state = false
+    compression = true     // Comprimir para ahorrar espacio
+    format = "binary"
+}

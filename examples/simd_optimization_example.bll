@@ -1,0 +1,107 @@
+# Brain Logical Language - SIMD Optimization Example
+# Este archivo demuestra cómo configurar optimizaciones SIMD en BLL
+
+# Configuración básica de la red
+network "optimized_network" {
+    type: "feedforward"
+    layers: 4
+    neurons_per_layer: [784, 256, 128, 10]
+    activation: "relu"
+}
+
+# Configuración de optimización SIMD
+simd_optimization "high_performance" {
+    # Habilitar optimizaciones SIMD
+    enabled: true
+    
+    # Auto-detectar capacidades del CPU
+    auto_detect: true
+    
+    # Forzar conjuntos de instrucciones específicos (opcional)
+    # force_avx2: true
+    # force_sse41: false
+    # force_fma: true
+    
+    # Usar fallback escalar si SIMD no está disponible
+    use_scalar_fallback: true
+    
+    # Vectorizar operaciones específicas
+    vectorize_activation: true
+    vectorize_matrix_ops: true
+    vectorize_convolution: true
+    vectorize_pooling: true
+    vectorize_attention: true
+    
+    # Configuración de memoria
+    memory_alignment: 32  # Alineación para AVX2 (32 bytes)
+    use_prefetching: true
+    prefetch_locality: 3  # Localidad temporal alta
+    
+    # Configuración de desenrollado de bucles
+    unroll_factor: 4
+    block_size: 256
+    
+    # Habilitar benchmarking para medir rendimiento
+    enable_benchmarking: true
+    
+    # Overrides para operaciones específicas
+    override_sigmoid: true
+    override_tanh: true
+    override_relu: true
+    override_matrix_mul: true
+}
+
+# Configuración de optimización adicional para comparación
+simd_optimization "conservative" {
+    enabled: true
+    auto_detect: true
+    use_scalar_fallback: true
+    
+    # Solo vectorizar operaciones básicas
+    vectorize_activation: true
+    vectorize_matrix_ops: false
+    vectorize_convolution: false
+    vectorize_pooling: false
+    vectorize_attention: false
+    
+    memory_alignment: 16  # SSE alignment
+    use_prefetching: false
+    unroll_factor: 2
+    block_size: 128
+    
+    enable_benchmarking: true
+}
+
+# Configuración de entrenamiento
+training "simd_training" {
+    algorithm: "adam"
+    learning_rate: 0.001
+    batch_size: 64
+    epochs: 100
+    
+    # Usar la configuración SIMD de alto rendimiento
+    optimization_profile: "high_performance"
+}
+
+# Configuración de optimización de memoria (compatible con SIMD)
+optimization "memory_simd" {
+    memory_optimization: true
+    use_sparse_matrices: false  # Las matrices densas funcionan mejor con SIMD
+    use_float16: false          # SIMD funciona mejor con float32
+    batch_size: 64
+    sparsity_threshold: 0.1
+}
+
+# Configuración de salida
+output "performance_metrics" {
+    type: "console"
+    format: "detailed"
+    include_simd_stats: true
+}
+
+# Configuración de logging
+logging {
+    level: "info"
+    include_simd_benchmarks: true
+    output_file: "simd_optimization.log"
+}

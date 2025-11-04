@@ -1,0 +1,291 @@
+// Sistema de Visión Artificial con Redes Neuronales Convolucionales
+// Implementación de procesamiento de imágenes y reconocimiento de objetos
+
+// Configuración global para visión artificial
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.001
+    noise_level = 0.005
+    random_seed = 987654
+    parallel_processing = true
+    gpu_acceleration = true
+    image_resolution = [224, 224, 3]
+    batch_size = 32
+}
+
+// Tipos de neuronas especializadas para visión
+neuron_type conv_neuron {
+    model = "LSTM"
+    threshold = -45.0
+    reset_potential = -65.0
+    receptive_field = [3, 3]
+    stride = 1
+    padding = "same"
+}
+
+neuron_type pooling_neuron {
+    model = "FAST_SPIKING"
+    threshold = -50.0
+    reset_potential = -70.0
+    pooling_type = "max"
+    pool_size = [2, 2]
+}
+
+neuron_type feature_detector {
+    model = "ATTENTION_UNIT"
+    threshold = -40.0
+    reset_potential = -60.0
+    attention_heads = 8
+    feature_dimension = 512
+}
+
+neuron_type classifier_neuron {
+    model = "TRANSFORMER"
+    threshold = -35.0
+    reset_potential = -55.0
+    num_classes = 1000
+    dropout_rate = 0.3
+}
+
+// Regiones de procesamiento visual
+region visual_cortex_v1 {
+    description = "Primary visual cortex - edge and orientation detection"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [56.0, 56.0, 64.0]
+    default_neuron_type = "conv_neuron"
+    
+    population edge_detectors {
+        type = "conv_neuron"
+        neurons = 200704  // 56*56*64
+        topology = "convolutional"
+        dimensions = [56, 56, 64]
+        kernel_size = [3, 3]
+        filters = 64
+    }
+    
+    population orientation_cells {
+        type = "conv_neuron"
+        neurons = 200704
+        topology = "convolutional"
+        dimensions = [56, 56, 64]
+        orientation_selectivity = true
+    }
+}
+
+region visual_cortex_v2 {
+    description = "Secondary visual cortex - complex feature detection"
+    coordinates = [0.0, 0.0, 10.0]
+    size = [28.0, 28.0, 128.0]
+    default_neuron_type = "conv_neuron"
+    
+    population complex_features {
+        type = "conv_neuron"
+        neurons = 100352  // 28*28*128
+        topology = "convolutional"
+        dimensions = [28, 28, 128]
+        kernel_size = [3, 3]
+        filters = 128
+    }
+    
+    population pooling_layer {
+        type = "pooling_neuron"
+        neurons = 25088   // 28*28*32
+        topology = "pooling"
+        dimensions = [28, 28, 32]
+    }
+}
+
+region visual_cortex_v4 {
+    description = "Higher-level visual processing - object parts"
+    coordinates = [0.0, 0.0, 20.0]
+    size = [14.0, 14.0, 256.0]
+    default_neuron_type = "feature_detector"
+    
+    population object_parts {
+        type = "feature_detector"
+        neurons = 50176   // 14*14*256
+        topology = "convolutional"
+        dimensions = [14, 14, 256]
+        kernel_size = [3, 3]
+        filters = 256
+    }
+    
+    population attention_mechanism {
+        type = "feature_detector"
+        neurons = 12544   // 14*14*64
+        topology = "attention"
+        dimensions = [14, 14, 64]
+        attention_type = "spatial"
+    }
+}
+
+region inferotemporal_cortex {
+    description = "Object recognition and classification"
+    coordinates = [0.0, 0.0, 30.0]
+    size = [7.0, 7.0, 512.0]
+    default_neuron_type = "classifier_neuron"
+    
+    population object_classifiers {
+        type = "classifier_neuron"
+        neurons = 25088   // 7*7*512
+        topology = "fully_connected"
+        dimensions = [7, 7, 512]
+    }
+    
+    population final_classifier {
+        type = "classifier_neuron"
+        neurons = 1000
+        topology = "fully_connected"
+        dimensions = [1000]
+        activation = "softmax"
+    }
+}
+
+// Conexiones entre regiones visuales
+connect {
+    source = "visual_cortex_v1.edge_detectors"
+    target = "visual_cortex_v1.orientation_cells"
+    pattern = "random"
+    weight = 0.5
+    connection_probability = 0.8
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.001
+    }
+}
+
+connect {
+    source = "visual_cortex_v1.orientation_cells"
+    target = "visual_cortex_v2.complex_features"
+    pattern = "random"
+    weight = 0.4
+    connection_probability = 0.7
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.001
+    }
+}
+
+connect {
+    source = "visual_cortex_v2.complex_features"
+    target = "visual_cortex_v2.pooling_layer"
+    pattern = "random"
+    weight = 1.0
+    connection_probability = 0.9
+}
+
+connect {
+    source = "visual_cortex_v2.pooling_layer"
+    target = "visual_cortex_v4.object_parts"
+    pattern = "random"
+    weight = 0.3
+    connection_probability = 0.6
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.0005
+    }
+}
+
+connect {
+    source = "visual_cortex_v4.object_parts"
+    target = "visual_cortex_v4.attention_mechanism"
+    pattern = "random"
+    weight = 0.6
+    connection_probability = 0.9
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.0001
+    }
+}
+
+connect {
+    source = "visual_cortex_v4.attention_mechanism"
+    target = "inferotemporal_cortex.object_classifiers"
+    pattern = "random"
+    weight = 0.4
+    connection_probability = 0.5
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.0001
+    }
+}
+
+connect {
+    source = "inferotemporal_cortex.object_classifiers"
+    target = "inferotemporal_cortex.final_classifier"
+    pattern = "full"
+    weight = 0.2
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.00005
+    }
+}
+
+// Interfaces de entrada y salida
+input_interface image_input {
+    target_population = "visual_cortex_v1.edge_detectors"
+    encoding = "temporal_coding"
+    normalization = "z_score"
+    update_frequency = 30.0
+}
+
+output_interface classification_output {
+    source_population = "inferotemporal_cortex.final_classifier"
+    decoding = "rate_based"
+    smoothing = "moving_average"
+    smoothing_factor = 0.8
+}
+
+// Protocolos de entrenamiento
+learning_protocol supervised_classification {
+    type = "supervised"
+    target_populations = ["visual_cortex_v1.edge_detectors", "visual_cortex_v2.complex_features", "visual_cortex_v4.object_parts", "inferotemporal_cortex.object_classifiers"]
+    learning_rate = 0.001
+    batch_size = 32
+    epochs = 100
+}
+
+// Monitoreo del sistema
+monitor vision_metrics {
+    populations = ["visual_cortex_v1.edge_detectors", "visual_cortex_v2.complex_features", "visual_cortex_v4.object_parts", "inferotemporal_cortex.object_classifiers"]
+    metrics = ["spike_rate", "membrane_potential", "synaptic_weights"]
+    sampling_rate = 2.0
+    window_size = 50.0
+    save_to_file = "vision_monitor.csv"
+}
+
+// Experimentos de visión
+experiment object_recognition {
+    description = "Visual object recognition task"
+    duration = 10000.0
+    training_protocol = "supervised_classification"
+    
+    stimulus_protocol {
+        type = "structured_input"
+        target_population = "visual_cortex_v1.edge_detectors"
+        pattern = "sequential"
+        amplitude = 20.0
+        duration = 200.0
+        frequency = 5.0
+    }
+    
+    analysis {
+        spike_analysis = true
+        weight_analysis = true
+        performance_metrics = true
+    }
+}
+
+// Configuración de guardado
+model_save {
+    enabled = true
+    save_path = "models/vision_model"
+    save_frequency = 100
+}

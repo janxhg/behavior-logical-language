@@ -1,0 +1,450 @@
+// Ejemplo de red neuronal recurrente para procesamiento de secuencias
+// Demuestra LSTM y procesamiento temporal
+
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.001
+    noise_level = 0.005
+    random_seed = 54321
+    parallel_processing = true
+    gpu_acceleration = true
+    sequence_processing = true
+}
+
+// Tipos de neuronas para RNN
+neuron_type lstm_cell {
+    model = "LSTM"
+    threshold = 30.0
+    reset_potential = -65.0
+    hidden_size = 128
+    input_size = 100
+    output_size = 64
+    forget_bias = 1.0
+    input_dropout = 0.1
+    recurrent_dropout = 0.1
+}
+
+neuron_type gru_cell {
+    model = "LSTM"  // Usando LSTM como base para GRU
+    threshold = 30.0
+    reset_potential = -65.0
+    hidden_size = 64
+    input_size = 64
+    output_size = 32
+    forget_bias = 0.5
+    input_dropout = 0.05
+    recurrent_dropout = 0.05
+}
+
+neuron_type attention_neuron {
+    model = "ATTENTION_UNIT"
+    threshold = 35.0
+    reset_potential = -60.0
+    attention_heads = 8
+    key_dim = 64
+    value_dim = 64
+    dropout_rate = 0.1
+}
+
+neuron_type sequence_output {
+    model = "LIF"
+    threshold = 25.0
+    reset_potential = -70.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 15.0
+    refractory_period = 1.0
+}
+
+// Región de entrada secuencial
+region sequence_input {
+    description = "Sequential input processing"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [10.0, 10.0, 5.0]
+    default_neuron_type = "lstm_cell"
+    
+    population input_embedding {
+        type = "lstm_cell"
+        neurons = 100
+        topology = "sequential"
+        sequence_length = 50
+    }
+}
+
+// Capas LSTM
+region lstm_layers {
+    description = "LSTM processing layers"
+    coordinates = [15.0, 0.0, 0.0]
+    size = [20.0, 15.0, 10.0]
+    default_neuron_type = "lstm_cell"
+    
+    population lstm_layer_1 {
+        type = "lstm_cell"
+        neurons = 128
+        topology = "sequential"
+        sequence_length = 50
+        bidirectional = false
+        return_sequences = true
+    }
+    
+    population lstm_layer_2 {
+        type = "lstm_cell"
+        neurons = 64
+        topology = "sequential"
+        sequence_length = 50
+        bidirectional = true
+        return_sequences = true
+    }
+    
+    population lstm_layer_3 {
+        type = "gru_cell"
+        neurons = 32
+        topology = "sequential"
+        sequence_length = 50
+        bidirectional = false
+        return_sequences = false
+    }
+}
+
+// Capa de atención
+region attention_layer {
+    description = "Attention mechanism"
+    coordinates = [40.0, 0.0, 0.0]
+    size = [15.0, 10.0, 8.0]
+    default_neuron_type = "attention_neuron"
+    
+    population self_attention {
+        type = "attention_neuron"
+        neurons = 64
+        topology = "attention_matrix"
+        attention_type = "self_attention"
+        num_heads = 8
+    }
+    
+    population cross_attention {
+        type = "attention_neuron"
+        neurons = 32
+        topology = "attention_matrix"
+        attention_type = "cross_attention"
+        num_heads = 4
+    }
+}
+
+// Capa de salida
+region output_layer {
+    description = "Sequence output layer"
+    coordinates = [60.0, 0.0, 0.0]
+    size = [10.0, 5.0, 3.0]
+    default_neuron_type = "sequence_output"
+    
+    population sequence_classifier {
+        type = "sequence_output"
+        neurons = 10
+        topology = "grid"
+        dimensions = [10, 1]
+    }
+    
+    population sequence_generator {
+        type = "lstm_cell"
+        neurons = 100
+        topology = "sequential"
+        sequence_length = 50
+        generation_mode = true
+    }
+}
+
+// Conexiones secuenciales
+connect {
+    source = "sequence_input.input_embedding"
+    target = "lstm_layers.lstm_layer_1"
+    pattern = "sequential"
+    weight = 0.3
+    weight_distribution = "xavier"
+    temporal_connections = true
+    
+    plasticity {
+        type = "BPTT"  // Backpropagation Through Time
+        learning_rate = 0.001
+        sequence_length = 50
+        gradient_clipping = true
+        clip_value = 1.0
+    }
+}
+
+connect {
+    source = "lstm_layers.lstm_layer_1"
+    target = "lstm_layers.lstm_layer_2"
+    pattern = "sequential"
+    weight = 0.25
+    weight_distribution = "xavier"
+    temporal_connections = true
+    
+    plasticity {
+        type = "BPTT"
+        learning_rate = 0.001
+        sequence_length = 50
+        gradient_clipping = true
+        clip_value = 1.0
+    }
+}
+
+connect {
+    source = "lstm_layers.lstm_layer_2"
+    target = "lstm_layers.lstm_layer_3"
+    pattern = "sequential"
+    weight = 0.2
+    weight_distribution = "xavier"
+    temporal_connections = true
+    
+    plasticity {
+        type = "BPTT"
+        learning_rate = 0.0008
+        sequence_length = 50
+        gradient_clipping = true
+        clip_value = 1.0
+    }
+}
+
+connect {
+    source = "lstm_layers.lstm_layer_3"
+    target = "attention_layer.self_attention"
+    pattern = "attention"
+    weight = 0.15
+    attention_mechanism = "scaled_dot_product"
+    
+    plasticity {
+        type = "attention_learning"
+        learning_rate = 0.0005
+        attention_dropout = 0.1
+    }
+}
+
+connect {
+    source = "attention_layer.self_attention"
+    target = "attention_layer.cross_attention"
+    pattern = "attention"
+    weight = 0.1
+    attention_mechanism = "multi_head"
+    
+    plasticity {
+        type = "attention_learning"
+        learning_rate = 0.0005
+        attention_dropout = 0.1
+    }
+}
+
+connect {
+    source = "attention_layer.cross_attention"
+    target = "output_layer.sequence_classifier"
+    pattern = "full"
+    weight = 0.2
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.001
+    }
+}
+
+connect {
+    source = "attention_layer.self_attention"
+    target = "output_layer.sequence_generator"
+    pattern = "sequential"
+    weight = 0.18
+    weight_distribution = "xavier"
+    temporal_connections = true
+    
+    plasticity {
+        type = "BPTT"
+        learning_rate = 0.0008
+        sequence_length = 50
+        gradient_clipping = true
+        clip_value = 1.0
+    }
+}
+
+// Entrada de secuencias
+input_interface sequence_input_interface {
+    target_population = "sequence_input.input_embedding"
+    encoding = "token_embedding"
+    normalization = "layer_norm"
+    preprocessing = ["tokenize", "embed", "positional_encoding"]
+    update_frequency = 1.0
+    sequence_length = 50
+    vocabulary_size = 10000
+    embedding_dim = 100
+}
+
+// Salidas
+output_interface classification_output {
+    source_population = "output_layer.sequence_classifier"
+    decoding = "softmax"
+    smoothing = "none"
+    temperature = 1.0
+}
+
+output_interface generation_output {
+    source_population = "output_layer.sequence_generator"
+    decoding = "beam_search"
+    beam_width = 5
+    max_length = 50
+    temperature = 0.8
+    top_k = 40
+    top_p = 0.9
+}
+
+// Protocolo de aprendizaje para RNN
+learning_protocol rnn_training {
+    type = "supervised"
+    target_populations = ["lstm_layers.lstm_layer_1", "lstm_layers.lstm_layer_2", "lstm_layers.lstm_layer_3", "attention_layer.self_attention", "output_layer.sequence_classifier"]
+    learning_rate = 0.001
+    batch_size = 16
+    epochs = 100
+    loss_function = "cross_entropy"
+    optimizer = "adam"
+    beta1 = 0.9
+    beta2 = 0.999
+    epsilon = 1e-8
+    learning_rate_schedule = "cosine_annealing"
+    min_learning_rate = 1e-6
+    warmup_steps = 1000
+    gradient_clipping = true
+    clip_norm = 1.0
+}
+
+// Protocolo para generación
+learning_protocol generation_training {
+    type = "language_modeling"
+    target_populations = ["output_layer.sequence_generator"]
+    learning_rate = 0.0005
+    batch_size = 8
+    epochs = 50
+    loss_function = "perplexity"
+    optimizer = "adamw"
+    weight_decay = 0.01
+    teacher_forcing_ratio = 0.5
+}
+
+// Monitoreo de RNN
+monitor rnn_monitor {
+    populations = ["lstm_layers.lstm_layer_1", "lstm_layers.lstm_layer_2", "attention_layer.self_attention", "output_layer.sequence_classifier"]
+    metrics = ["hidden_states", "cell_states", "attention_weights", "sequence_accuracy", "perplexity"]
+    sampling_rate = 0.2
+    window_size = 200.0
+    save_to_file = "rnn_monitor.csv"
+    save_attention_maps = true
+    save_hidden_states = true
+}
+
+// Experimento de procesamiento de secuencias
+experiment sequence_processing {
+    description = "Sequence classification and generation"
+    duration = 15000.0
+    training_protocol = "rnn_training"
+    
+    stimulus_protocol {
+        type = "text_sequences"
+        target_population = "sequence_input.input_embedding"
+        dataset = "text_classification"
+        sequence_length = 50
+        batch_size = 16
+        shuffle = true
+        padding = "post"
+        truncation = "post"
+    }
+    
+    validation {
+        enabled = true
+        validation_split = 0.2
+        validation_frequency = 50
+        early_stopping = true
+        patience = 15
+        min_delta = 0.001
+        restore_best_weights = true
+    }
+    
+    analysis {
+        spike_analysis = false
+        weight_analysis = false
+        performance_metrics = true
+        accuracy_tracking = true
+        attention_analysis = true
+        sequence_analysis = true
+        bleu_score = true
+        perplexity_tracking = true
+    }
+}
+
+// Experimento de generación
+experiment text_generation {
+    description = "Text generation using RNN"
+    duration = 10000.0
+    training_protocol = "generation_training"
+    
+    stimulus_protocol {
+        type = "text_corpus"
+        target_population = "sequence_input.input_embedding"
+        dataset = "text_corpus"
+        sequence_length = 50
+        batch_size = 8
+        overlap = 25
+    }
+    
+    generation_config {
+        max_length = 100
+        temperature = 0.8
+        top_k = 40
+        top_p = 0.9
+        repetition_penalty = 1.1
+        length_penalty = 1.0
+    }
+    
+    analysis {
+        generation_quality = true
+        diversity_metrics = true
+        coherence_analysis = true
+        fluency_analysis = true
+    }
+}
+
+// Visualización de RNN
+visualization rnn_visualization {
+    type = "sequence_analysis"
+    populations = ["lstm_layers.lstm_layer_1", "attention_layer.self_attention"]
+    plot_type = "attention_heatmap"
+    color_by = "attention_weight"
+    layout = "temporal"
+    animation = true
+    export_format = "interactive_html"
+    
+    attention_visualization {
+        enabled = true
+        layer = "attention_layer"
+        head_selection = "all"
+        sequence_selection = "sample"
+    }
+    
+    hidden_state_visualization {
+        enabled = true
+        layer = "lstm_layers"
+        dimensionality_reduction = "tsne"
+        time_steps = [0, 10, 20, 30, 40, 49]
+    }
+}
+
+model_save {
+    enabled = true
+    save_path = "models/rnn_sequence_processor"
+    save_frequency = 200
+    save_weights = true
+    save_topology = true
+    save_learning_state = true
+    save_attention_weights = true
+    save_hidden_states = false
+    compression = true
+    format = "hdf5"
+    checkpoint_best_only = true
+    monitor_metric = "validation_accuracy"
+    save_optimizer_state = true
+}

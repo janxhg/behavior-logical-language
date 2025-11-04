@@ -1,0 +1,356 @@
+// Red neuronal escalada para aprovechar mejor tu hardware
+// Ryzen 5 3500 (6 cores) + 16GB RAM optimizada
+
+# Configuración básica de la red
+network "scaled_network" {
+    type: "feedforward"
+    layers: 6
+    neurons_per_layer: [1024, 512, 256, 128, 64, 10]
+    activation: "relu"
+}
+
+# Configuración SIMD optimizada para Ryzen 5 3500
+simd_optimization "ryzen_optimized" {
+    enabled: true
+    auto_detect: true
+    force_avx2: true
+    force_fma: true
+    use_scalar_fallback: true
+    
+    vectorize_activation: true
+    vectorize_matrix_ops: true
+    vectorize_convolution: true
+    vectorize_pooling: true
+    vectorize_attention: true
+    
+    memory_alignment: 32
+    use_prefetching: true
+    prefetch_locality: 3
+    
+    # Optimizado para 6 cores
+    unroll_factor: 6
+    block_size: 1024
+    
+    enable_benchmarking: true
+    
+    override_sigmoid: true
+    override_tanh: true
+    override_relu: true
+    override_matrix_mul: true
+}
+
+// Configuración global escalada
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.01
+    noise_level = 0.005
+    random_seed = 123456
+    parallel_processing = true
+    gpu_acceleration = true
+    
+    connection_sparsity = 0.2  // Mantener dispersión
+    memory_optimization = true
+    batch_processing = true
+    thread_count = 6  // Usar todos los cores del Ryzen 5 3500
+}
+
+// Tipos de neuronas optimizadas
+neuron_type fast_cortical {
+    model = "leaky_integrate_fire"
+    threshold = -50.0
+    reset_potential = -70.0
+    tau_membrane = 20.0
+    resistance = 10.0
+}
+
+neuron_type fast_inhibitory {
+    model = "leaky_integrate_fire"
+    threshold = -45.0
+    reset_potential = -65.0
+    tau_membrane = 10.0
+    resistance = 8.0
+}
+
+// Regiones cerebrales escaladas (aprovechando la eficiencia)
+region prefrontal_cortex {
+    description = "Executive control - scaled"
+    coordinates = [0.0, 5.0, 0.0]
+    size = [20.0, 15.0, 10.0]
+    default_neuron_type = "fast_cortical"
+    
+    population executive_neurons {
+        type = "fast_cortical"
+        size = 15000  // Escalado significativamente
+        topology = "grid"
+        dimensions = [100, 15]
+    }
+    
+    population inhibitory_control {
+        type = "fast_inhibitory"
+        size = 25000  // Escalado significativamente
+        topology = "grid"
+    }
+}
+
+region language_area {
+    description = "Language processing - scaled"
+    coordinates = [-15.0, 0.0, 0.0]
+    size = [18.0, 12.0, 8.0]
+    default_neuron_type = "fast_cortical"
+    
+    population language_neurons {
+        type = "fast_cortical"
+        size = 20000  // Escalado significativamente
+        topology = "grid"
+        dimensions = [100, 20]
+    }
+    
+    population syntax_processors {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+    
+    population semantic_processors {
+        type = "fast_cortical"
+        size = 12000
+        topology = "grid"
+    }
+}
+
+region limbic_system {
+    description = "Emotional processing - scaled"
+    coordinates = [0.0, -8.0, -5.0]
+    size = [12.0, 8.0, 6.0]
+    default_neuron_type = "fast_cortical"
+    
+    population emotion_neurons {
+        type = "fast_cortical"
+        size = 10000
+        topology = "grid"
+    }
+    
+    population reward_neurons {
+        type = "fast_cortical"
+        size = 5000
+        topology = "grid"
+    }
+}
+
+region working_memory {
+    description = "Working memory system - new region"
+    coordinates = [5.0, 0.0, 5.0]
+    size = [10.0, 8.0, 6.0]
+    default_neuron_type = "fast_cortical"
+    
+    population memory_buffer {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+    
+    population attention_control {
+        type = "fast_cortical"
+        size = 6000
+        topology = "grid"
+    }
+}
+
+region sensory_processing {
+    description = "Sensory input processing - new region"
+    coordinates = [-5.0, -5.0, 0.0]
+    size = [8.0, 6.0, 4.0]
+    default_neuron_type = "fast_cortical"
+    
+    population visual_processors {
+        type = "fast_cortical"
+        size = 12000
+        topology = "grid"
+    }
+    
+    population auditory_processors {
+        type = "fast_cortical"
+        size = 8000
+        topology = "grid"
+    }
+}
+
+// Conexiones optimizadas manteniendo dispersión
+connect {
+    source = "language_area.language_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.15  // Mantener baja densidad
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.01
+    }
+}
+
+connect {
+    source = "prefrontal_cortex.executive_neurons"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.5
+    connection_probability = 0.2
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.008
+    }
+}
+
+connect {
+    source = "working_memory.attention_control"
+    target = "language_area.language_neurons"
+    pattern = "sparse"
+    weight = 0.3
+    connection_probability = 0.1
+}
+
+connect {
+    source = "sensory_processing.visual_processors"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.12
+}
+
+connect {
+    source = "sensory_processing.auditory_processors"
+    target = "language_area.syntax_processors"
+    pattern = "sparse"
+    weight = 0.45
+    connection_probability = 0.18
+}
+
+connect {
+    source = "limbic_system.reward_neurons"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = 0.6
+    connection_probability = 0.15
+}
+
+connect {
+    source = "prefrontal_cortex.inhibitory_control"
+    target = "prefrontal_cortex.executive_neurons"
+    pattern = "sparse"
+    weight = -0.25
+    connection_probability = 0.1
+}
+
+connect {
+    source = "language_area.syntax_processors"
+    target = "language_area.semantic_processors"
+    pattern = "sparse"
+    weight = 0.35
+    connection_probability = 0.2
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.005
+    }
+}
+
+connect {
+    source = "language_area.semantic_processors"
+    target = "working_memory.memory_buffer"
+    pattern = "sparse"
+    weight = 0.4
+    connection_probability = 0.15
+    
+    plasticity {
+        type = "simple_hebbian"
+        learning_rate = 0.01
+    }
+}
+
+// Interfaces escaladas
+input_interface visual_input {
+    target_population = "sensory_processing.visual_processors"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 30.0
+}
+
+input_interface auditory_input {
+    target_population = "sensory_processing.auditory_processors"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 25.0
+}
+
+input_interface text_input {
+    target_population = "language_area.language_neurons"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 20.0
+}
+
+output_interface decision_output {
+    source_population = "prefrontal_cortex.executive_neurons"
+    decoding = "rate_based"
+    smoothing = "none"
+}
+
+output_interface memory_output {
+    source_population = "working_memory.memory_buffer"
+    decoding = "rate_based"
+    smoothing = "none"
+}
+
+// Protocolo de aprendizaje escalado
+learning_protocol scaled_learning {
+    type = "hebbian"
+    target_populations = [
+        "prefrontal_cortex.executive_neurons", 
+        "language_area.language_neurons",
+        "working_memory.memory_buffer"
+    ]
+    learning_rate = 0.001
+    batch_size = 256  // Lotes más grandes para aprovechar paralelización
+    epochs = 200
+}
+
+// Monitoreo optimizado
+monitor performance_monitor {
+    populations = [
+        "prefrontal_cortex.executive_neurons",
+        "working_memory.memory_buffer"
+    ]
+    metrics = ["spike_rate"]
+    sampling_rate = 0.5  // Menos frecuente para mejor rendimiento
+    window_size = 200.0
+}
+
+// Experimento escalado
+experiment large_scale_test {
+    description = "Large scale cognitive task optimized for Ryzen 5 3500"
+    duration = 8000.0
+    training_protocol = "scaled_learning"
+    
+    stimulus_protocol {
+        type = "multi_modal_input"
+        target_population = "sensory_processing.visual_processors"
+        pattern = "complex_sequential"
+        amplitude = 20.0
+        duration = 150.0
+        frequency = 3.0
+    }
+}
+
+// Configuración de guardado optimizada
+model_save {
+    enabled = true
+    save_path = "models/scaled_model"
+    save_frequency = 1000  // Menos frecuente para mejor rendimiento
+    save_weights = true
+    save_topology = false
+    save_learning_state = false
+    compression = true
+    format = "binary"
+}

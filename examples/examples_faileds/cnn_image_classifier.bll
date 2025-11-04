@@ -1,0 +1,371 @@
+// Ejemplo de red neuronal convolucional para procesamiento de imágenes
+// Demuestra arquitecturas más complejas y especializadas
+
+global {
+    simulation_timestep = 0.05
+    learning_enabled = true
+    plasticity_decay = 0.002
+    noise_level = 0.01
+    random_seed = 98765
+    parallel_processing = true
+    gpu_acceleration = true
+    memory_optimization = true
+}
+
+// Tipos de neuronas especializadas para CNN
+neuron_type conv_neuron {
+    model = "IZHIKEVICH"
+    threshold = 30.0
+    reset_potential = -65.0
+    a = 0.02
+    b = 0.2
+    c = -65.0
+    d = 8.0
+    receptive_field_size = 3
+}
+
+neuron_type pooling_neuron {
+    model = "FAST_SPIKING"
+    threshold = 25.0
+    reset_potential = -70.0
+    a = 0.1
+    b = 0.2
+    c = -65.0
+    d = 2.0
+    pooling_type = "max"
+}
+
+neuron_type feature_detector {
+    model = "ADAPTIVE_LIF"
+    threshold = 35.0
+    reset_potential = -60.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.5
+    membrane_resistance = 12.0
+    refractory_period = 3.0
+    adaptation_strength = 0.03
+    adaptation_time_constant = 80.0
+}
+
+neuron_type classifier_neuron {
+    model = "LSTM"
+    threshold = 40.0
+    reset_potential = -55.0
+    hidden_size = 256
+    input_size = 128
+    output_size = 64
+}
+
+// Región de entrada (simulando imagen 28x28)
+region input_layer {
+    description = "Input layer for 28x28 images"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [28.0, 28.0, 1.0]
+    default_neuron_type = "conv_neuron"
+    
+    population pixel_neurons {
+        type = "conv_neuron"
+        neurons = 784  // 28x28
+        topology = "grid"
+        dimensions = [28, 28]
+    }
+}
+
+// Primera capa convolucional
+region conv_layer_1 {
+    description = "First convolutional layer"
+    coordinates = [30.0, 0.0, 0.0]
+    size = [26.0, 26.0, 32.0]
+    default_neuron_type = "conv_neuron"
+    
+    population conv_filters_1 {
+        type = "conv_neuron"
+        neurons = 21632  // 26x26x32
+        topology = "grid"
+        dimensions = [26, 26, 32]
+        filter_size = 3
+        stride = 1
+        padding = 0
+    }
+}
+
+// Primera capa de pooling
+region pool_layer_1 {
+    description = "First pooling layer"
+    coordinates = [60.0, 0.0, 0.0]
+    size = [13.0, 13.0, 32.0]
+    default_neuron_type = "pooling_neuron"
+    
+    population pool_neurons_1 {
+        type = "pooling_neuron"
+        neurons = 5408  // 13x13x32
+        topology = "grid"
+        dimensions = [13, 13, 32]
+        pool_size = 2
+        stride = 2
+    }
+}
+
+// Segunda capa convolucional
+region conv_layer_2 {
+    description = "Second convolutional layer"
+    coordinates = [80.0, 0.0, 0.0]
+    size = [11.0, 11.0, 64.0]
+    default_neuron_type = "feature_detector"
+    
+    population conv_filters_2 {
+        type = "feature_detector"
+        neurons = 7744  // 11x11x64
+        topology = "grid"
+        dimensions = [11, 11, 64]
+        filter_size = 3
+        stride = 1
+        padding = 0
+    }
+}
+
+// Segunda capa de pooling
+region pool_layer_2 {
+    description = "Second pooling layer"
+    coordinates = [100.0, 0.0, 0.0]
+    size = [5.0, 5.0, 64.0]
+    default_neuron_type = "pooling_neuron"
+    
+    population pool_neurons_2 {
+        type = "pooling_neuron"
+        neurons = 1600  // 5x5x64
+        topology = "grid"
+        dimensions = [5, 5, 64]
+        pool_size = 2
+        stride = 2
+    }
+}
+
+// Capa completamente conectada
+region fully_connected {
+    description = "Fully connected layer"
+    coordinates = [120.0, 0.0, 0.0]
+    size = [10.0, 10.0, 10.0]
+    default_neuron_type = "classifier_neuron"
+    
+    population dense_layer {
+        type = "classifier_neuron"
+        neurons = 128
+        topology = "random"
+    }
+    
+    population output_layer {
+        type = "classifier_neuron"
+        neurons = 10  // 10 clases
+        topology = "grid"
+        dimensions = [10, 1]
+    }
+}
+
+// Conexiones convolucionales
+connect {
+    source = "input_layer.pixel_neurons"
+    target = "conv_layer_1.conv_filters_1"
+    pattern = "convolutional"
+    weight = 0.2
+    kernel_size = 3
+    stride = 1
+    padding = 0
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.001
+        momentum = 0.9
+        weight_decay = 0.0001
+    }
+}
+
+connect {
+    source = "conv_layer_1.conv_filters_1"
+    target = "pool_layer_1.pool_neurons_1"
+    pattern = "pooling"
+    weight = 1.0
+    pool_size = 2
+    stride = 2
+    pooling_type = "max"
+}
+
+connect {
+    source = "pool_layer_1.pool_neurons_1"
+    target = "conv_layer_2.conv_filters_2"
+    pattern = "convolutional"
+    weight = 0.15
+    kernel_size = 3
+    stride = 1
+    padding = 0
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.0008
+        momentum = 0.9
+        weight_decay = 0.0001
+    }
+}
+
+connect {
+    source = "conv_layer_2.conv_filters_2"
+    target = "pool_layer_2.pool_neurons_2"
+    pattern = "pooling"
+    weight = 1.0
+    pool_size = 2
+    stride = 2
+    pooling_type = "max"
+}
+
+connect {
+    source = "pool_layer_2.pool_neurons_2"
+    target = "fully_connected.dense_layer"
+    pattern = "full"
+    weight = 0.1
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.001
+        momentum = 0.9
+        weight_decay = 0.0005
+    }
+}
+
+connect {
+    source = "fully_connected.dense_layer"
+    target = "fully_connected.output_layer"
+    pattern = "full"
+    weight = 0.05
+    weight_distribution = "xavier"
+    
+    plasticity {
+        type = "backpropagation"
+        learning_rate = 0.001
+        momentum = 0.9
+        weight_decay = 0.0005
+    }
+}
+
+// Entrada de imágenes
+input_interface image_input {
+    target_population = "input_layer.pixel_neurons"
+    encoding = "pixel_intensity"
+    normalization = "z_score"
+    preprocessing = ["resize", "normalize", "augment"]
+    update_frequency = 1.0
+    batch_size = 32
+}
+
+// Salida de clasificación
+output_interface classification_output {
+    source_population = "fully_connected.output_layer"
+    decoding = "softmax"
+    smoothing = "none"
+    temperature = 1.0
+}
+
+// Protocolo de aprendizaje CNN
+learning_protocol cnn_training {
+    type = "supervised"
+    target_populations = ["conv_layer_1.conv_filters_1", "conv_layer_2.conv_filters_2", "fully_connected.dense_layer", "fully_connected.output_layer"]
+    learning_rate = 0.001
+    batch_size = 32
+    epochs = 50
+    loss_function = "cross_entropy"
+    optimizer = "adam"
+    beta1 = 0.9
+    beta2 = 0.999
+    epsilon = 1e-8
+    learning_rate_schedule = "exponential_decay"
+    decay_rate = 0.95
+    decay_steps = 1000
+}
+
+// Monitoreo de CNN
+monitor cnn_monitor {
+    populations = ["conv_layer_1.conv_filters_1", "conv_layer_2.conv_filters_2", "fully_connected.dense_layer", "fully_connected.output_layer"]
+    metrics = ["spike_rate", "feature_maps", "filter_weights", "classification_accuracy"]
+    sampling_rate = 0.5
+    window_size = 100.0
+    save_to_file = "cnn_monitor.csv"
+    save_feature_maps = true
+    feature_map_frequency = 10
+}
+
+// Experimento de clasificación de imágenes
+experiment image_classification {
+    description = "Image classification using CNN architecture"
+    duration = 10000.0
+    training_protocol = "cnn_training"
+    
+    stimulus_protocol {
+        type = "image_dataset"
+        target_population = "input_layer.pixel_neurons"
+        dataset = "mnist"
+        batch_size = 32
+        shuffle = true
+        augmentation = true
+        rotation_range = 15
+        zoom_range = 0.1
+        shift_range = 0.1
+    }
+    
+    validation {
+        enabled = true
+        validation_split = 0.2
+        validation_frequency = 100
+        early_stopping = true
+        patience = 10
+        min_delta = 0.001
+    }
+    
+    analysis {
+        spike_analysis = false
+        weight_analysis = true
+        performance_metrics = true
+        accuracy_tracking = true
+        confusion_matrix = true
+        feature_visualization = true
+    }
+}
+
+// Visualización de CNN
+visualization cnn_visualization {
+    type = "cnn_analysis"
+    populations = ["conv_layer_1.conv_filters_1", "conv_layer_2.conv_filters_2"]
+    plot_type = "feature_maps"
+    color_by = "activation_strength"
+    layout = "grid"
+    animation = true
+    export_format = "interactive_html"
+    
+    filter_visualization {
+        enabled = true
+        layer = "conv_layer_1"
+        num_filters = 16
+        visualization_type = "activation_maximization"
+    }
+    
+    feature_map_visualization {
+        enabled = true
+        input_sample = "random"
+        layers = ["conv_layer_1", "conv_layer_2"]
+    }
+}
+
+model_save {
+    enabled = true
+    save_path = "models/cnn_classifier"
+    save_frequency = 100
+    save_weights = true
+    save_topology = true
+    save_learning_state = true
+    save_feature_maps = true
+    compression = true
+    format = "hdf5"
+    checkpoint_best_only = true
+    monitor_metric = "validation_accuracy"
+}

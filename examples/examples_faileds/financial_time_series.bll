@@ -1,0 +1,587 @@
+// Sistema de Análisis de Series Temporales con Redes Neuronales Recurrentes
+// Implementación para predicción financiera y análisis de tendencias
+
+// Configuración global para series temporales
+global {
+    simulation_timestep = 0.01
+    learning_enabled = true
+    plasticity_decay = 0.001
+    noise_level = 0.005
+    random_seed = 321654
+    parallel_processing = true
+    gpu_acceleration = true
+    sequence_length = 100
+    prediction_horizon = 10
+    sampling_frequency = 1.0
+}
+
+// Tipos de neuronas especializadas para series temporales
+neuron_type lstm_cell {
+    model = "LSTM"
+    threshold = -40.0
+    reset_potential = -65.0
+    hidden_size = 256
+    forget_bias = 1.0
+    dropout = 0.2
+}
+
+neuron_type gru_cell {
+    model = "GRU"
+    threshold = -35.0
+    reset_potential = -60.0
+    hidden_size = 128
+    reset_after = true
+    dropout = 0.1
+}
+
+neuron_type attention_temporal {
+    model = "ATTENTION_UNIT"
+    threshold = -30.0
+    reset_potential = -55.0
+    num_heads = 8
+    temporal_attention = true
+    sequence_attention = true
+}
+
+neuron_type trend_detector {
+    model = "ADAPTIVE_LIF"
+    threshold = -45.0
+    reset_potential = -70.0
+    adaptation_strength = 0.2
+    trend_sensitivity = 1.5
+}
+
+neuron_type volatility_estimator {
+    model = "HIGH_RESOLUTION_LIF"
+    threshold = -25.0
+    reset_potential = -50.0
+    volatility_window = 20
+    risk_threshold = 0.05
+}
+
+// Regiones de procesamiento temporal
+region data_preprocessing {
+    description = "Data normalization and feature extraction"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [100.0, 50.0, 10.0]
+    default_neuron_type = "trend_detector"
+    
+    population normalizers {
+        type = "trend_detector"
+        neurons = 50
+        topology = "linear"
+        dimensions = [50]
+        normalization_type = "z_score"
+        window_size = 252  // trading days in year
+    }
+    
+    population feature_extractors {
+        type = "trend_detector"
+        neurons = 200
+        topology = "grid"
+        dimensions = [10, 20]
+        feature_types = ["sma", "ema", "rsi", "macd", "bollinger"]
+    }
+    
+    population outlier_detectors {
+        type = "volatility_estimator"
+        neurons = 25
+        topology = "linear"
+        dimensions = [25]
+        outlier_threshold = 3.0
+        detection_method = "isolation_forest"
+    }
+}
+
+region sequence_encoding {
+    description = "Temporal sequence encoding and representation"
+    coordinates = [0.0, 60.0, 0.0]
+    size = [100.0, 256.0, 20.0]
+    default_neuron_type = "lstm_cell"
+    
+    population encoder_lstm {
+        type = "lstm_cell"
+        neurons = 25600  // 100 * 256
+        topology = "recurrent"
+        dimensions = [100, 256]
+        bidirectional = true
+        num_layers = 3
+    }
+    
+    population encoder_gru {
+        type = "gru_cell"
+        neurons = 12800  // 100 * 128
+        topology = "recurrent"
+        dimensions = [100, 128]
+        bidirectional = false
+        num_layers = 2
+    }
+    
+    population temporal_attention {
+        type = "attention_temporal"
+        neurons = 25600  // 100 * 256
+        topology = "attention"
+        dimensions = [100, 256]
+        attention_type = "temporal_self_attention"
+    }
+}
+
+region pattern_recognition {
+    description = "Financial pattern and trend recognition"
+    coordinates = [0.0, -60.0, 0.0]
+    size = [100.0, 128.0, 15.0]
+    default_neuron_type = "attention_temporal"
+    
+    population trend_analyzers {
+        type = "trend_detector"
+        neurons = 6400  // 100 * 64
+        topology = "convolutional_1d"
+        dimensions = [100, 64]
+        kernel_size = 5
+        trend_types = ["uptrend", "downtrend", "sideways"]
+    }
+    
+    population pattern_matchers {
+        type = "attention_temporal"
+        neurons = 12800  // 100 * 128
+        topology = "pattern_matching"
+        dimensions = [100, 128]
+        pattern_library = ["head_shoulders", "double_top", "triangle", "flag"]
+    }
+    
+    population cycle_detectors {
+        type = "gru_cell"
+        neurons = 3200  // 100 * 32
+        topology = "spectral_analysis"
+        dimensions = [100, 32]
+        frequency_bands = ["daily", "weekly", "monthly", "quarterly"]
+    }
+}
+
+region prediction_engine {
+    description = "Multi-horizon prediction and forecasting"
+    coordinates = [120.0, 0.0, 0.0]
+    size = [50.0, 256.0, 25.0]
+    default_neuron_type = "lstm_cell"
+    
+    population short_term_predictors {
+        type = "lstm_cell"
+        neurons = 2560  // 10 * 256
+        topology = "seq2seq"
+        dimensions = [10, 256]
+        prediction_horizon = 1
+        prediction_type = "point_forecast"
+    }
+    
+    population medium_term_predictors {
+        type = "gru_cell"
+        neurons = 1280  // 10 * 128
+        topology = "seq2seq"
+        dimensions = [10, 128]
+        prediction_horizon = 5
+        prediction_type = "interval_forecast"
+    }
+    
+    population long_term_predictors {
+        type = "attention_temporal"
+        neurons = 640  // 10 * 64
+        topology = "transformer_decoder"
+        dimensions = [10, 64]
+        prediction_horizon = 20
+        prediction_type = "distribution_forecast"
+    }
+    
+    population uncertainty_estimators {
+        type = "volatility_estimator"
+        neurons = 320  // 10 * 32
+        topology = "bayesian_neural_network"
+        dimensions = [10, 32]
+        uncertainty_type = "aleatoric_epistemic"
+    }
+}
+
+region risk_assessment {
+    description = "Risk analysis and portfolio optimization"
+    coordinates = [-120.0, 0.0, 0.0]
+    size = [80.0, 128.0, 20.0]
+    default_neuron_type = "volatility_estimator"
+    
+    population var_calculators {
+        type = "volatility_estimator"
+        neurons = 1280  // 10 * 128
+        topology = "monte_carlo"
+        dimensions = [10, 128]
+        confidence_levels = [0.95, 0.99]
+        var_method = "historical_simulation"
+    }
+    
+    population correlation_analyzers {
+        type = "attention_temporal"
+        neurons = 6400  // 80 * 80 correlation matrix
+        topology = "correlation_network"
+        dimensions = [80, 80]
+        correlation_type = "dynamic_conditional"
+    }
+    
+    population portfolio_optimizers {
+        type = "lstm_cell"
+        neurons = 640  // 10 * 64
+        topology = "optimization_network"
+        dimensions = [10, 64]
+        optimization_objective = "sharpe_ratio"
+        constraints = ["long_only", "sector_limits"]
+    }
+}
+
+// Conexiones de preprocesamiento
+connect {
+    source = "data_preprocessing.normalizers"
+    target = "data_preprocessing.feature_extractors"
+    pattern = "fully_connected"
+    weight = 0.8
+    
+    plasticity {
+        type = "adaptive_normalization"
+        learning_rate = 0.001
+        adaptation_rate = 0.01
+    }
+}
+
+connect {
+    source = "data_preprocessing.feature_extractors"
+    target = "sequence_encoding.encoder_lstm"
+    pattern = "temporal_projection"
+    weight = 0.6
+    
+    plasticity {
+        type = "temporal_learning"
+        learning_rate = 0.001
+        sequence_regularization = 0.01
+    }
+}
+
+// Conexiones de codificación secuencial
+connect {
+    source = "sequence_encoding.encoder_lstm"
+    target = "sequence_encoding.temporal_attention"
+    pattern = "attention_mechanism"
+    weight = 0.7
+    
+    plasticity {
+        type = "attention_learning"
+        learning_rate = 0.0005
+        attention_dropout = 0.1
+    }
+}
+
+connect {
+    source = "sequence_encoding.encoder_gru"
+    target = "sequence_encoding.temporal_attention"
+    pattern = "multi_scale_fusion"
+    weight = 0.5
+    
+    plasticity {
+        type = "multi_scale_learning"
+        learning_rate = 0.0008
+        scale_weights = [0.3, 0.7]
+    }
+}
+
+// Conexiones de reconocimiento de patrones
+connect {
+    source = "sequence_encoding.temporal_attention"
+    target = "pattern_recognition.trend_analyzers"
+    pattern = "trend_projection"
+    weight = 0.6
+    
+    plasticity {
+        type = "trend_learning"
+        learning_rate = 0.002
+        trend_momentum = 0.9
+    }
+}
+
+connect {
+    source = "pattern_recognition.trend_analyzers"
+    target = "pattern_recognition.pattern_matchers"
+    pattern = "pattern_correlation"
+    weight = 0.8
+    
+    plasticity {
+        type = "pattern_learning"
+        learning_rate = 0.001
+        pattern_memory = 0.95
+    }
+}
+
+connect {
+    source = "pattern_recognition.pattern_matchers"
+    target = "pattern_recognition.cycle_detectors"
+    pattern = "spectral_decomposition"
+    weight = 0.4
+    
+    plasticity {
+        type = "spectral_learning"
+        learning_rate = 0.0005
+        frequency_adaptation = true
+    }
+}
+
+// Conexiones de predicción
+connect {
+    source = "pattern_recognition.cycle_detectors"
+    target = "prediction_engine.short_term_predictors"
+    pattern = "multi_horizon_projection"
+    weight = 0.9
+    
+    plasticity {
+        type = "forecasting_learning"
+        learning_rate = 0.001
+        horizon_weighting = [0.5, 0.3, 0.2]
+    }
+}
+
+connect {
+    source = "prediction_engine.short_term_predictors"
+    target = "prediction_engine.medium_term_predictors"
+    pattern = "hierarchical_forecasting"
+    weight = 0.7
+    
+    plasticity {
+        type = "hierarchical_learning"
+        learning_rate = 0.0008
+        consistency_loss = 0.1
+    }
+}
+
+connect {
+    source = "prediction_engine.medium_term_predictors"
+    target = "prediction_engine.long_term_predictors"
+    pattern = "long_term_projection"
+    weight = 0.5
+    
+    plasticity {
+        type = "long_term_learning"
+        learning_rate = 0.0003
+        stability_regularization = 0.05
+    }
+}
+
+// Conexiones de evaluación de riesgo
+connect {
+    source = "prediction_engine.uncertainty_estimators"
+    target = "risk_assessment.var_calculators"
+    pattern = "risk_propagation"
+    weight = 0.8
+    
+    plasticity {
+        type = "risk_learning"
+        learning_rate = 0.0005
+        risk_aversion = 0.1
+    }
+}
+
+connect {
+    source = "risk_assessment.var_calculators"
+    target = "risk_assessment.correlation_analyzers"
+    pattern = "correlation_estimation"
+    weight = 0.6
+    
+    plasticity {
+        type = "correlation_learning"
+        learning_rate = 0.0003
+        correlation_decay = 0.95
+    }
+}
+
+// Interfaces de entrada
+input_interface market_data {
+    target_population = "data_preprocessing.normalizers"
+    encoding = "time_series"
+    normalization = "rolling_z_score"
+    preprocessing = ["missing_value_imputation", "outlier_treatment"]
+    update_frequency = 1.0
+    data_fields = ["open", "high", "low", "close", "volume"]
+}
+
+input_interface economic_indicators {
+    target_population = "data_preprocessing.feature_extractors"
+    encoding = "economic_features"
+    normalization = "min_max"
+    preprocessing = ["seasonal_adjustment", "trend_removal"]
+    update_frequency = 0.25  // quarterly
+    indicators = ["gdp", "inflation", "unemployment", "interest_rates"]
+}
+
+input_interface news_sentiment {
+    target_population = "pattern_recognition.pattern_matchers"
+    encoding = "sentiment_scores"
+    normalization = "sentiment_normalization"
+    preprocessing = ["text_processing", "sentiment_analysis"]
+    update_frequency = 24.0  // daily
+    sentiment_range = [-1.0, 1.0]
+}
+
+// Interfaces de salida
+output_interface price_predictions {
+    source_population = "prediction_engine.short_term_predictors"
+    encoding = "price_forecast"
+    postprocessing = ["denormalization", "confidence_intervals"]
+    output_format = "time_series_forecast"
+    prediction_intervals = [0.8, 0.9, 0.95]
+}
+
+output_interface risk_metrics {
+    source_population = "risk_assessment.var_calculators"
+    encoding = "risk_measures"
+    postprocessing = ["risk_aggregation", "stress_testing"]
+    output_format = "risk_report"
+    risk_measures = ["var", "cvar", "expected_shortfall"]
+}
+
+output_interface trading_signals {
+    source_population = "pattern_recognition.trend_analyzers"
+    encoding = "signal_strength"
+    postprocessing = ["signal_filtering", "position_sizing"]
+    output_format = "trading_recommendations"
+    signal_types = ["buy", "sell", "hold"]
+}
+
+// Protocolos de entrenamiento
+learning_protocol time_series_training {
+    type = "supervised_sequence"
+    loss_function = "mse_with_uncertainty"
+    optimizer = "adam"
+    learning_rate = 0.001
+    batch_size = 64
+    sequence_length = 100
+    prediction_horizon = 10
+    
+    regularization = {
+        "l2_weight" = 0.001,
+        "dropout" = 0.2,
+        "gradient_clipping" = 1.0
+    }
+    
+    validation = {
+        "walk_forward" = true,
+        "validation_split" = 0.2,
+        "early_stopping_patience" = 20
+    }
+}
+
+learning_protocol online_learning {
+    type = "online_adaptation"
+    adaptation_rate = 0.01
+    forgetting_factor = 0.99
+    concept_drift_detection = true
+    retraining_threshold = 0.1
+    
+    drift_detection = {
+        "method" = "adwin",
+        "confidence" = 0.95,
+        "window_size" = 1000
+    }
+}
+
+// Monitoreo del sistema
+monitoring financial_metrics {
+    mape_threshold = 0.05
+    sharpe_ratio_threshold = 1.0
+    max_drawdown_threshold = 0.1
+    
+    metrics = [
+        "mean_absolute_percentage_error",
+        "directional_accuracy",
+        "sharpe_ratio",
+        "maximum_drawdown",
+        "calmar_ratio",
+        "information_ratio"
+    ]
+    
+    risk_monitoring = [
+        "value_at_risk",
+        "expected_shortfall",
+        "volatility_clustering",
+        "correlation_breakdown"
+    ]
+}
+
+// Experimentos financieros
+experiment stock_prediction {
+    description = "Individual stock price prediction"
+    dataset = "sp500_daily"
+    prediction_horizon = 5
+    training_period = "2010-2020"
+    testing_period = "2020-2023"
+    
+    evaluation_metrics = [
+        "mape",
+        "rmse",
+        "directional_accuracy",
+        "profit_loss"
+    ]
+}
+
+experiment portfolio_optimization {
+    description = "Multi-asset portfolio optimization"
+    universe = "sp500_constituents"
+    rebalancing_frequency = "monthly"
+    lookback_period = 252
+    
+    evaluation_metrics = [
+        "portfolio_return",
+        "portfolio_volatility",
+        "sharpe_ratio",
+        "maximum_drawdown"
+    ]
+}
+
+experiment market_regime_detection {
+    description = "Market regime identification and prediction"
+    regimes = ["bull", "bear", "sideways", "volatile"]
+    detection_method = "hidden_markov_model"
+    
+    evaluation_metrics = [
+        "regime_classification_accuracy",
+        "regime_transition_prediction",
+        "regime_duration_accuracy"
+    ]
+}
+
+// Configuración de visualización
+visualization financial_dashboard {
+    show_predictions = true
+    show_confidence_intervals = true
+    show_risk_metrics = true
+    show_trading_signals = true
+    
+    charts = [
+        "price_prediction_chart",
+        "volatility_surface",
+        "correlation_heatmap",
+        "risk_decomposition"
+    ]
+    
+    real_time_updates = true
+    interactive_features = true
+}
+
+// Configuración de guardado
+save_config financial_model {
+    save_model_weights = true
+    save_scaler_parameters = true
+    save_feature_importance = true
+    save_backtest_results = true
+    
+    checkpoint_frequency = 100
+    best_model_metric = "sharpe_ratio"
+    model_format = "pytorch"
+    
+    production_config = {
+        "real_time_inference" = true,
+        "latency_optimization" = true,
+        "risk_monitoring" = true,
+        "regulatory_compliance" = true
+    }
+}

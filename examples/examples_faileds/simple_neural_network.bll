@@ -1,0 +1,193 @@
+// Ejemplo de red neuronal simple para aprendizaje básico
+// Ideal para principiantes y pruebas rápidas
+
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.001
+    noise_level = 0.005
+    random_seed = 12345
+    parallel_processing = false
+    gpu_acceleration = false
+}
+
+// Tipos de neuronas simples
+neuron_type input_neuron {
+    model = "LIF"
+    threshold = 25.0
+    reset_potential = -70.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 20.0
+    refractory_period = 1.0
+}
+
+neuron_type hidden_neuron {
+    model = "ADAPTIVE_LIF"
+    threshold = 30.0
+    reset_potential = -65.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 15.0
+    refractory_period = 2.0
+    adaptation_strength = 0.01
+    adaptation_time_constant = 50.0
+}
+
+neuron_type output_neuron {
+    model = "LIF"
+    threshold = 35.0
+    reset_potential = -60.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 10.0
+    refractory_period = 1.5
+}
+
+// Red simple de tres capas
+region simple_network {
+    description = "Simple three-layer neural network"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [10.0, 10.0, 5.0]
+    default_neuron_type = "hidden_neuron"
+    
+    population input_layer {
+        type = "input_neuron"
+        neurons = 100
+        topology = "grid"
+        dimensions = [10, 10]
+    }
+    
+    population hidden_layer {
+        type = "hidden_neuron"
+        neurons = 50
+        topology = "grid"
+        dimensions = [10, 5]
+    }
+    
+    population output_layer {
+        type = "output_neuron"
+        neurons = 10
+        topology = "grid"
+        dimensions = [10, 1]
+    }
+}
+
+// Conexiones feedforward
+connect {
+    source = "simple_network.input_layer"
+    target = "simple_network.hidden_layer"
+    pattern = "full"
+    weight = 0.3
+    weight_distribution = "uniform"
+    weight_min = 0.1
+    weight_max = 0.5
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.005
+        tau_pre = 15.0
+        tau_post = 15.0
+        A_plus = 0.08
+        A_minus = 0.1
+    }
+}
+
+connect {
+    source = "simple_network.hidden_layer"
+    target = "simple_network.output_layer"
+    pattern = "full"
+    weight = 0.4
+    weight_distribution = "normal"
+    weight_mean = 0.0
+    weight_std = 0.1
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.01
+        tau_pre = 20.0
+        tau_post = 20.0
+        A_plus = 0.1
+        A_minus = 0.12
+    }
+}
+
+// Entrada simple
+input_interface data_input {
+    target_population = "simple_network.input_layer"
+    encoding = "rate_coding"
+    normalization = "min_max"
+    update_frequency = 5.0
+}
+
+// Salida simple
+output_interface classification_output {
+    source_population = "simple_network.output_layer"
+    decoding = "winner_take_all"
+    smoothing = "none"
+}
+
+// Aprendizaje supervisado simple
+learning_protocol supervised_learning {
+    type = "supervised"
+    target_populations = ["simple_network.hidden_layer", "simple_network.output_layer"]
+    learning_rate = 0.01
+    batch_size = 20
+    epochs = 100
+    loss_function = "mse"
+    optimizer = "sgd"
+}
+
+// Monitoreo básico
+monitor basic_monitor {
+    populations = ["simple_network.input_layer", "simple_network.hidden_layer", "simple_network.output_layer"]
+    metrics = ["spike_rate", "membrane_potential"]
+    sampling_rate = 1.0
+    window_size = 20.0
+    save_to_file = "simple_network_monitor.csv"
+}
+
+// Experimento de clasificación simple
+experiment classification_task {
+    description = "Simple classification task"
+    duration = 2000.0
+    training_protocol = "supervised_learning"
+    
+    stimulus_protocol {
+        type = "pattern_input"
+        target_population = "simple_network.input_layer"
+        pattern = "sequential"
+        amplitude = 10.0
+        duration = 50.0
+        frequency = 2.0
+    }
+    
+    analysis {
+        spike_analysis = true
+        weight_analysis = false
+        performance_metrics = true
+        accuracy_tracking = true
+    }
+}
+
+// Visualización simple
+visualization network_activity {
+    type = "activity_plot"
+    populations = ["simple_network.input_layer", "simple_network.hidden_layer", "simple_network.output_layer"]
+    plot_type = "line_plot"
+    color_by = "layer"
+    layout = "vertical"
+    animation = false
+    export_format = "svg"
+}
+
+model_save {
+    enabled = true
+    save_path = "models/simple_network"
+    save_frequency = 25
+    save_weights = true
+    save_topology = false
+    save_learning_state = false
+    compression = false
+    format = "json"
+}

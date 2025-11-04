@@ -1,0 +1,226 @@
+// Ejemplo de showcase del nuevo sistema modular de neuronas
+// Demuestra todos los tipos de neuronas disponibles
+
+global {
+    simulation_timestep = 0.1
+    learning_enabled = true
+    plasticity_decay = 0.01
+    noise_level = 0.02
+    random_seed = 42
+    parallel_processing = true
+    gpu_acceleration = false
+}
+
+// Tipos de neuronas del sistema modular
+neuron_type lif_basic {
+    model = "LIF"
+    threshold = 30.0
+    reset_potential = -65.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 10.0
+    refractory_period = 2.0
+}
+
+neuron_type adaptive_lif {
+    model = "ADAPTIVE_LIF"
+    threshold = 30.0
+    reset_potential = -65.0
+    resting_potential = -70.0
+    membrane_capacitance = 1.0
+    membrane_resistance = 10.0
+    refractory_period = 2.0
+    adaptation_strength = 0.02
+    adaptation_time_constant = 100.0
+}
+
+neuron_type izhikevich_regular {
+    model = "IZHIKEVICH"
+    threshold = 30.0
+    reset_potential = -65.0
+    a = 0.02
+    b = 0.2
+    c = -65.0
+    d = 8.0
+}
+
+neuron_type fast_spiking {
+    model = "FAST_SPIKING"
+    threshold = 30.0
+    reset_potential = -65.0
+    a = 0.1
+    b = 0.2
+    c = -65.0
+    d = 2.0
+}
+
+neuron_type lstm_memory {
+    model = "LSTM"
+    threshold = 30.0
+    reset_potential = -65.0
+    hidden_size = 128
+    input_size = 64
+    output_size = 32
+}
+
+// Región para demostrar diferentes tipos de neuronas
+region modular_showcase {
+    description = "Showcase of modular neuron system"
+    coordinates = [0.0, 0.0, 0.0]
+    size = [20.0, 20.0, 10.0]
+    default_neuron_type = "lif_basic"
+    
+    population lif_layer {
+        type = "lif_basic"
+        neurons = 1000
+        topology = "grid"
+        dimensions = [20, 50]
+    }
+    
+    population adaptive_layer {
+        type = "adaptive_lif"
+        neurons = 800
+        topology = "grid"
+        dimensions = [20, 40]
+    }
+    
+    population izhikevich_layer {
+        type = "izhikevich_regular"
+        neurons = 600
+        topology = "grid"
+        dimensions = [20, 30]
+    }
+    
+    population fast_spiking_interneurons {
+        type = "fast_spiking"
+        neurons = 400
+        topology = "random"
+    }
+    
+    population memory_units {
+        type = "lstm_memory"
+        neurons = 200
+        topology = "grid"
+        dimensions = [10, 20]
+    }
+}
+
+// Conexiones entre capas para mostrar interacción
+connect {
+    source = "modular_showcase.lif_layer"
+    target = "modular_showcase.adaptive_layer"
+    pattern = "random"
+    weight = 0.5
+    connection_probability = 0.3
+    
+    plasticity {
+        type = "STDP"
+        learning_rate = 0.01
+        tau_pre = 20.0
+        tau_post = 20.0
+        A_plus = 0.1
+        A_minus = 0.12
+    }
+}
+
+connect {
+    source = "modular_showcase.adaptive_layer"
+    target = "modular_showcase.izhikevich_layer"
+    pattern = "random"
+    weight = 0.4
+    connection_probability = 0.4
+}
+
+connect {
+    source = "modular_showcase.fast_spiking_interneurons"
+    target = "modular_showcase.lif_layer"
+    pattern = "random"
+    weight = -0.3
+    connection_probability = 0.2
+}
+
+connect {
+    source = "modular_showcase.izhikevich_layer"
+    target = "modular_showcase.memory_units"
+    pattern = "random"
+    weight = 0.6
+    connection_probability = 0.5
+}
+
+// Entrada y salida
+input_interface pattern_input {
+    target_population = "modular_showcase.lif_layer"
+    encoding = "rate_coding"
+    normalization = "z_score"
+    update_frequency = 10.0
+}
+
+output_interface pattern_output {
+    source_population = "modular_showcase.memory_units"
+    decoding = "rate_based"
+    smoothing = "moving_average"
+    smoothing_factor = 0.7
+}
+
+// Protocolo de aprendizaje
+learning_protocol modular_learning {
+    type = "unsupervised"
+    target_populations = ["modular_showcase.lif_layer", "modular_showcase.adaptive_layer", "modular_showcase.izhikevich_layer"]
+    learning_rate = 0.001
+    batch_size = 50
+    epochs = 300
+}
+
+// Monitoreo específico para tipos de neuronas
+monitor neuron_type_monitor {
+    populations = ["modular_showcase.lif_layer", "modular_showcase.adaptive_layer", "modular_showcase.izhikevich_layer", "modular_showcase.fast_spiking_interneurons", "modular_showcase.memory_units"]
+    metrics = ["spike_rate", "membrane_potential", "adaptation_variable", "recovery_variable"]
+    sampling_rate = 5.0
+    window_size = 100.0
+    save_to_file = "modular_neuron_monitor.csv"
+}
+
+// Experimento de comparación
+experiment neuron_comparison {
+    description = "Comparison of different neuron types under same stimulation"
+    duration = 5000.0
+    training_protocol = "modular_learning"
+    
+    stimulus_protocol {
+        type = "poisson_input"
+        target_population = "modular_showcase.lif_layer"
+        pattern = "random"
+        amplitude = 15.0
+        duration = 100.0
+        frequency = 20.0
+    }
+    
+    analysis {
+        spike_analysis = true
+        adaptation_analysis = true
+        memory_analysis = true
+        comparative_analysis = true
+    }
+}
+
+// Visualización comparativa
+visualization neuron_comparison_viz {
+    type = "comparative_plot"
+    populations = ["modular_showcase.lif_layer", "modular_showcase.adaptive_layer", "modular_showcase.izhikevich_layer"]
+    plot_type = "spike_raster"
+    color_by = "neuron_type"
+    layout = "stacked"
+    animation = false
+    export_format = "png"
+}
+
+model_save {
+    enabled = true
+    save_path = "models/modular_neuron_showcase"
+    save_frequency = 50
+    save_weights = true
+    save_topology = true
+    save_learning_state = true
+    compression = true
+    format = "hdf5"
+}
