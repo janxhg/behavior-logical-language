@@ -1,0 +1,238 @@
+{
+  "Region Block": {
+    "prefix": "region",
+    "body": [
+      "region ${1:region_name} {",
+      "  ${2:// Region configuration}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a new brain region"
+  },
+  "Population Block": {
+    "prefix": "population",
+    "body": [
+      "population ${1:pop_name} {",
+      "  size: ${2:100}",
+      "  neuron_type: ${3|LIF,Izhikevich,HodgkinHuxley,LSTM,Attention,Adaptive,Transformer|}",
+      "  ${4:// Additional parameters}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a neural population"
+  },
+  "LIF Neuron Population": {
+    "prefix": "lif-pop",
+    "body": [
+      "population ${1:lif_neurons} {",
+      "  size: ${2:100}",
+      "  neuron_type: LIF",
+      "  threshold: ${3:1.0}",
+      "  decay: ${4:0.95}",
+      "  refractory_period: ${5:2}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create LIF neuron population with common parameters"
+  },
+  "Izhikevich Neuron Population": {
+    "prefix": "izh-pop",
+    "body": [
+      "population ${1:izh_neurons} {",
+      "  size: ${2:100}",
+      "  neuron_type: Izhikevich",
+      "  a: ${3:0.02}",
+      "  b: ${4:0.2}",
+      "  c: ${5:-65.0}",
+      "  d: ${6:8.0}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create Izhikevich neuron population"
+  },
+  "LSTM Neuron Population": {
+    "prefix": "lstm-pop",
+    "body": [
+      "population ${1:lstm_neurons} {",
+      "  size: ${2:50}",
+      "  neuron_type: LSTM",
+      "  input_size: ${3:10}",
+      "  hidden_size: ${4:20}",
+      "  output_size: ${5:10}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create LSTM neuron population"
+  },
+  "Attention Neuron Population": {
+    "prefix": "attention-pop",
+    "body": [
+      "population ${1:attention_neurons} {",
+      "  size: ${2:32}",
+      "  neuron_type: Attention",
+      "  num_heads: ${3:8}",
+      "  input_size: ${4:64}",
+      "  dropout: ${5:0.1}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create multi-head attention neuron population"
+  },
+  "Connection Block": {
+    "prefix": "connection",
+    "body": [
+      "connection ${1:conn_name} {",
+      "  from: ${2:source_region.source_pop}",
+      "  to: ${3:target_region.target_pop}",
+      "  weight: ${4:0.5}",
+      "  delay: ${5:1}",
+      "  probability: ${6:0.1}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a neural connection"
+  },
+  "STDP Connection": {
+    "prefix": "stdp-conn",
+    "body": [
+      "connection ${1:stdp_conn} {",
+      "  from: ${2:source_region.source_pop}",
+      "  to: ${3:target_region.target_pop}",
+      "  weight: ${4:0.5}",
+      "  delay: ${5:1}",
+      "  probability: ${6:0.1}",
+      "  plasticity: STDP",
+      "  learning_rate: ${7:0.01}",
+      "  $0",
+      "}"
+    ],
+    "description": "Create STDP plastic connection"
+  },
+  "Plasticity Rule": {
+    "prefix": "plasticity",
+    "body": [
+      "plasticity ${1:rule_name} {",
+      "  type: ${2|STDP,Hebbian,AntiHebbian,BCM,Oja|}",
+      "  learning_rate: ${3:0.01}",
+      "  ${4:// Additional plasticity parameters}",
+      "  $0",
+      "}"
+    ],
+    "description": "Define a plasticity rule"
+  },
+  "Learning Protocol": {
+    "prefix": "learning",
+    "body": [
+      "learning ${1:protocol_name} {",
+      "  type: ${2|Supervised,Reinforcement,Unsupervised|}",
+      "  target: ${3:target_population}",
+      "  learning_rate: ${4:0.001}",
+      "  ${5:// Protocol-specific parameters}",
+      "  $0",
+      "}"
+    ],
+    "description": "Define a learning protocol"
+  },
+  "Simulation Config": {
+    "prefix": "simulation",
+    "body": [
+      "simulation {",
+      "  duration: ${1:1000}",
+      "  timestep: ${2:0.1}",
+      "  output_file: \"${3:results.dat}\"",
+      "  ${4:// Additional simulation parameters}",
+      "  $0",
+      "}"
+    ],
+    "description": "Configure simulation parameters"
+  },
+  "Array Parameter": {
+    "prefix": "array",
+    "body": [
+      "${1:parameter}: [${2:value1}, ${3:value2}, ${4:value3}]$0"
+    ],
+    "description": "Create an array parameter"
+  },
+  "Range Parameter": {
+    "prefix": "range",
+    "body": [
+      "${1:parameter}: range(${2:start}, ${3:end}, ${4:step})$0"
+    ],
+    "description": "Create a range parameter"
+  },
+  "Random Parameter": {
+    "prefix": "random",
+    "body": [
+      "${1:parameter}: random(${2:min}, ${3:max})$0"
+    ],
+    "description": "Create a random parameter"
+  },
+  "Gaussian Parameter": {
+    "prefix": "gaussian",
+    "body": [
+      "${1:parameter}: gaussian(${2:mean}, ${3:std})$0"
+    ],
+    "description": "Create a Gaussian distributed parameter"
+  },
+  "Import Statement": {
+    "prefix": "import",
+    "body": [
+      "import \"${1:filename.bll}\"$0"
+    ],
+    "description": "Import another BrainLL file"
+  },
+  "Include Statement": {
+    "prefix": "include",
+    "body": [
+      "include \"${1:config.bll}\"$0"
+    ],
+    "description": "Include configuration file"
+  },
+  "Comment Block": {
+    "prefix": "comment",
+    "body": [
+      "/*",
+      " * ${1:Description}",
+      " * ${2:Additional details}",
+      " */",
+      "$0"
+    ],
+    "description": "Create a comment block"
+  },
+  "Full Brain Region Template": {
+    "prefix": "brain-region",
+    "body": [
+      "region ${1:cortex} {",
+      "  population ${2:excitatory} {",
+      "    size: ${3:800}",
+      "    neuron_type: ${4|LIF,Izhikevich|}",
+      "    threshold: ${5:1.0}",
+      "    decay: ${6:0.95}",
+      "  }",
+      "",
+      "  population ${7:inhibitory} {",
+      "    size: ${8:200}",
+      "    neuron_type: ${9|LIF,Izhikevich|}",
+      "    threshold: ${10:1.0}",
+      "    decay: ${11:0.95}",
+      "  }",
+      "",
+      "  connection ${12:exc_to_inh} {",
+      "    from: ${1:cortex}.${2:excitatory}",
+      "    to: ${1:cortex}.${7:inhibitory}",
+      "    weight: ${13:0.3}",
+      "    probability: ${14:0.2}",
+      "  }",
+      "",
+      "  connection ${15:inh_to_exc} {",
+      "    from: ${1:cortex}.${7:inhibitory}",
+      "    to: ${1:cortex}.${2:excitatory}",
+      "    weight: ${16:-0.5}",
+      "    probability: ${17:0.3}",
+      "  }",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a complete brain region with excitatory/inhibitory populations"
+  }
+}

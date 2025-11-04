@@ -1,0 +1,129 @@
+{
+  "name": "brainll-language-support",
+  "displayName": "BrainLL Language Support",
+  "description": "Syntax highlighting, autocompletion, and validation for BrainLL neural network language",
+  "version": "0.8.0",
+  "publisher": "brainll-project",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "brainll",
+    "neural networks",
+    "ai",
+    "machine learning",
+    "syntax highlighting"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "brainll",
+        "aliases": [
+          "BrainLL",
+          "brainll"
+        ],
+        "extensions": [
+          ".bll",
+          ".brainll"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "brainll",
+        "scopeName": "source.brainll",
+        "path": "./syntaxes/brainll.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "brainll",
+        "path": "./snippets/brainll.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "brainll.validateSyntax",
+        "title": "Validate BrainLL Syntax"
+      },
+      {
+        "command": "brainll.formatDocument",
+        "title": "Format BrainLL Document"
+      },
+      {
+        "command": "brainll.showDocumentation",
+        "title": "Show BrainLL Documentation"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "brainll.validateSyntax",
+        "key": "ctrl+shift+v",
+        "when": "editorTextFocus && resourceExtname == '.bll'"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "BrainLL Configuration",
+      "properties": {
+        "brainll.validation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time syntax validation"
+        },
+        "brainll.validation.strictMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable strict validation mode"
+        },
+        "brainll.autocompletion.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable intelligent autocompletion"
+        },
+        "brainll.formatting.indentSize": {
+          "type": "number",
+          "default": 2,
+          "description": "Number of spaces for indentation"
+        },
+        "brainll.validatorPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to brainll_validator executable"
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onLanguage:brainll"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brainll-project/vscode-extension"
+  },
+  "license": "AGPL-3.0"
+}

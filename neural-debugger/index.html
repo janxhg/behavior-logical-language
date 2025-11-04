@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrainLL Neural Network Debugger</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.155.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🧠 BrainLL Neural Debugger</h1>
+                <div class="header-controls">
+                    <input type="text" id="networkPath" placeholder="Ruta del directorio de red..." class="network-path-input">
+                    <button id="loadPathBtn" class="btn btn-info">Load from Path</button>
+                    <button id="loadBtn" class="btn btn-primary">Load File</button>
+                    <button id="playBtn" class="btn btn-success">▶ Play</button>
+                    <button id="pauseBtn" class="btn btn-warning">⏸ Pause</button>
+                    <button id="stepBtn" class="btn btn-info">⏭ Step</button>
+                    <button id="resetBtn" class="btn btn-secondary">🔄 Reset</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="panel">
+                    <h3>Network Structure</h3>
+                    <div id="networkTree" class="network-tree"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>Simulation Controls</h3>
+                    <div class="control-group">
+                        <label for="timeStep">Time Step (ms):</label>
+                        <input type="range" id="timeStep" min="0.1" max="10" step="0.1" value="1">
+                        <span id="timeStepValue">1.0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="playbackSpeed">Playback Speed:</label>
+                        <input type="range" id="playbackSpeed" min="0.1" max="5" step="0.1" value="1">
+                        <span id="playbackSpeedValue">1.0x</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="currentTime">Current Time:</label>
+                        <span id="currentTime">0.0 ms</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Visualization Options</h3>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="showSpikes" checked> Show Spikes</label>
+                        <label><input type="checkbox" id="showWeights" checked> Show Weights</label>
+                        <label><input type="checkbox" id="showActivity"> Show Activity</label>
+                        <label><input type="checkbox" id="show3D"> 3D View</label>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="nodeSize">Node Size:</label>
+                        <input type="range" id="nodeSize" min="2" max="20" value="8">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="edgeWidth">Edge Width:</label>
+                        <input type="range" id="edgeWidth" min="0.5" max="5" step="0.5" value="1">
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Selected Neuron</h3>
+                    <div id="neuronInfo">
+                        <p>Click a neuron to see details</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Visualization Area -->
+            <main class="visualization-area">
+                <div class="viz-header">
+                    <div class="viz-tabs">
+                        <button class="tab-btn active" data-tab="network">Network View</button>
+                        <button class="tab-btn" data-tab="activity">Activity Plot</button>
+                        <button class="tab-btn" data-tab="weights">Weight Matrix</button>
+                        <button class="tab-btn" data-tab="3d">3D Visualization</button>
+                    </div>
+                </div>
+
+                <div class="viz-content">
+                    <!-- Network Graph View -->
+                    <div id="networkTab" class="tab-content active">
+                        <svg id="networkSvg" class="network-svg"></svg>
+                        <div class="zoom-controls">
+                            <button id="zoomIn" class="zoom-btn">+</button>
+                            <button id="zoomOut" class="zoom-btn">-</button>
+                            <button id="zoomReset" class="zoom-btn">⌂</button>
+                        </div>
+                    </div>
+
+                    <!-- Activity Plot View -->
+                    <div id="activityTab" class="tab-content">
+                        <div class="plot-controls">
+                            <select id="plotType">
+                                <option value="raster">Spike Raster</option>
+                                <option value="rate">Firing Rate</option>
+                                <option value="voltage">Membrane Voltage</option>
+                                <option value="weights">Weight Evolution</option>
+                            </select>
+                            <input type="range" id="timeWindow" min="10" max="1000" value="100">
+                            <span>Time Window: <span id="timeWindowValue">100ms</span></span>
+                        </div>
+                        <div id="activityPlot" class="activity-plot"></div>
+                    </div>
+
+                    <!-- Weight Matrix View -->
+                    <div id="weightsTab" class="tab-content">
+                        <div class="matrix-controls">
+                            <select id="matrixType">
+                                <option value="weights">Connection Weights</option>
+                                <option value="activity">Activity Correlation</option>
+                                <option value="plasticity">Plasticity Changes</option>
+                            </select>
+                            <div class="colormap-selector">
+                                <label for="colormap">Colormap:</label>
+                                <select id="colormap">
+                                    <option value="viridis">Viridis</option>
+                                    <option value="plasma">Plasma</option>
+                                    <option value="coolwarm">Cool-Warm</option>
+                                    <option value="rdbu">Red-Blue</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="weightMatrix" class="weight-matrix"></div>
+                    </div>
+
+                    <!-- 3D Visualization View -->
+                    <div id="3dTab" class="tab-content">
+                        <div class="controls-3d">
+                            <button id="layout3D" class="btn btn-sm">Auto Layout</button>
+                            <button id="animate3D" class="btn btn-sm">Animate</button>
+                            <label><input type="checkbox" id="showConnections3D" checked> Show Connections</label>
+                        </div>
+                        <div id="threejs-container" class="threejs-container"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Bottom Panel -->
+        <footer class="bottom-panel">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <h4>Simulation Timeline</h4>
+                    <div class="timeline-controls">
+                        <button id="timelinePlay" class="btn btn-xs">▶</button>
+                        <button id="timelinePause" class="btn btn-xs">⏸</button>
+                        <span id="timelineTime">0.0s</span>
+                    </div>
+                </div>
+                <div id="timeline" class="timeline"></div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-label">Neurons:</span>
+                    <span id="neuronCount" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Connections:</span>
+                    <span id="connectionCount" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Spikes/s:</span>
+                    <span id="spikeRate" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Activity:</span>
+                    <span id="activityLevel" class="stat-value">0%</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- File Input (Hidden) -->
+    <input type="file" id="fileInput" accept=".json,.bll" style="display: none;">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Loading neural network...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/network-parser.js"></script>
+    <script src="js/network-visualization.js"></script>
+    <script src="js/renderer-3d.js"></script>
+    <script src="js/activity-plotter.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

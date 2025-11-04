@@ -1,0 +1,152 @@
+@echo off
+REM Script de instalación para herramientas BrainLL en Windows
+REM Generado automáticamente por CMake
+
+setlocal enabledelayedexpansion
+
+echo ========================================
+echo  Instalador de Herramientas BrainLL
+echo ========================================
+echo.
+
+REM Verificar permisos de administrador
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo ERROR: Este script requiere permisos de administrador.
+    echo Por favor, ejecute como administrador.
+    pause
+    exit /b 1
+)
+
+REM Configuración de rutas
+set "INSTALL_DIR=C:\Program Files\BrainLL\Tools"
+set "BIN_DIR=%INSTALL_DIR%\bin"
+set "CONFIG_DIR=%INSTALL_DIR%\config"
+set "DOCS_DIR=%INSTALL_DIR%\docs"
+set "SOURCE_DIR=@CMAKE_BINARY_DIR@"
+
+echo Directorio de instalación: %INSTALL_DIR%
+echo Directorio fuente: %SOURCE_DIR%
+echo.
+
+REM Crear directorios
+echo Creando directorios...
+if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
+if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
+if not exist "%CONFIG_DIR%" mkdir "%CONFIG_DIR%"
+if not exist "%DOCS_DIR%" mkdir "%DOCS_DIR%"
+
+REM Copiar ejecutables
+echo Copiando ejecutables...
+if exist "%SOURCE_DIR%\bin\brainll_validator.exe" (
+    copy "%SOURCE_DIR%\bin\brainll_validator.exe" "%BIN_DIR%\" >nul
+    if !errorLevel! equ 0 (
+        echo   ✓ brainll_validator.exe copiado
+    ) else (
+        echo   ✗ Error copiando brainll_validator.exe
+        goto :error
+    )
+) else (
+    echo   ✗ No se encontró brainll_validator.exe en %SOURCE_DIR%\bin\
+    goto :error
+)
+
+REM Copiar archivos de configuración
+echo Copiando archivos de configuración...
+if exist "@CMAKE_CURRENT_SOURCE_DIR@\validator_config.ini" (
+    copy "@CMAKE_CURRENT_SOURCE_DIR@\validator_config.ini" "%CONFIG_DIR%\" >nul
+    echo   ✓ validator_config.ini copiado
+)
+
+REM Copiar documentación
+echo Copiando documentación...
+if exist "@CMAKE_CURRENT_SOURCE_DIR@\README_tools.md" (
+    copy "@CMAKE_CURRENT_SOURCE_DIR@\README_tools.md" "%DOCS_DIR%\" >nul
+    echo   ✓ README_tools.md copiado
+)
+
+REM Agregar al PATH del sistema
+echo Configurando variables de entorno...
+setx PATH "%PATH%;%BIN_DIR%" /M >nul 2>&1
+if !errorLevel! equ 0 (
+    echo   ✓ Directorio agregado al PATH del sistema
+) else (
+    echo   ⚠ No se pudo agregar al PATH del sistema automáticamente
+    echo     Agregue manualmente: %BIN_DIR%
+)
+
+REM Crear accesos directos en el escritorio (opcional)
+echo.
+set /p "CREATE_SHORTCUTS=¿Crear accesos directos en el escritorio? (s/n): "
+if /i "!CREATE_SHORTCUTS!"=="s" (
+    echo Creando accesos directos...
+    
+    REM Crear acceso directo para el validador
+    powershell -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%USERPROFILE%\Desktop\BrainLL Validator.lnk'); $Shortcut.TargetPath = '%BIN_DIR%\brainll_validator.exe'; $Shortcut.WorkingDirectory = '%BIN_DIR%'; $Shortcut.Description = 'Validador de sintaxis BrainLL'; $Shortcut.Save()"
+    
+    if !errorLevel! equ 0 (
+        echo   ✓ Acceso directo creado en el escritorio
+    ) else (
+        echo   ⚠ No se pudo crear el acceso directo
+    )
+)
+
+REM Verificar instalación
+echo.
+echo Verificando instalación...
+"%BIN_DIR%\brainll_validator.exe" --version >nul 2>&1
+if !errorLevel! equ 0 (
+    echo   ✓ brainll_validator funciona correctamente
+) else (
+    echo   ✗ Error al ejecutar brainll_validator
+    goto :error
+)
+
+REM Crear archivo de desinstalación
+echo Creando desinstalador...
+(
+echo @echo off
+echo echo Desinstalando herramientas BrainLL...
+echo rmdir /s /q "%INSTALL_DIR%"
+echo echo Herramientas BrainLL desinstaladas.
+echo pause
+) > "%INSTALL_DIR%\uninstall.bat"
+
+echo.
+echo ========================================
+echo  INSTALACIÓN COMPLETADA EXITOSAMENTE
+echo ========================================
+echo.
+echo Las herramientas BrainLL han sido instaladas en:
+echo   %INSTALL_DIR%
+echo.
+echo Herramientas disponibles:
+echo   - brainll_validator: Validador de sintaxis BrainLL
+echo.
+echo Para usar las herramientas desde cualquier ubicación,
+echo reinicie su terminal o abra una nueva ventana de comandos.
+echo.
+echo Ejemplos de uso:
+echo   brainll_validator --help
+echo   brainll_validator mi_archivo.brainll
+echo   brainll_validator --recursive ./mi_proyecto/
+echo.
+echo Para desinstalar, ejecute: %INSTALL_DIR%\uninstall.bat
+echo.
+pause
+exit /b 0
+
+:error
+echo.
+echo ========================================
+echo  ERROR EN LA INSTALACIÓN
+echo ========================================
+echo.
+echo La instalación no se completó correctamente.
+echo Verifique que:
+echo   1. Tiene permisos de administrador
+echo   2. Los archivos fuente están disponibles
+echo   3. No hay antivirus bloqueando la instalación
+echo.
+pause
+exit /b 1

@@ -1,0 +1,47 @@
+{
+  "title": "Simple Test Network",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "regions": [
+    {
+      "name": "cortex",
+      "populations": [
+        {
+          "name": "excitatory",
+          "size": 10,
+          "neuron_type": "LIF",
+          "parameters": {
+            "threshold": 1.0,
+            "decay": 0.95,
+            "refractory_period": 2
+          }
+        },
+        {
+          "name": "inhibitory",
+          "size": 3,
+          "neuron_type": "LIF",
+          "parameters": {
+            "threshold": 1.0,
+            "decay": 0.95,
+            "refractory_period": 2
+          }
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "name": "exc_to_inh",
+      "from": "cortex.excitatory",
+      "to": "cortex.inhibitory",
+      "weight": 0.3,
+      "probability": 0.5
+    },
+    {
+      "name": "inh_to_exc",
+      "from": "cortex.inhibitory",
+      "to": "cortex.excitatory",
+      "weight": -0.5,
+      "probability": 0.3
+    }
+  ]
+}
